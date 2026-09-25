@@ -92,9 +92,13 @@
 - **Suivi** : exclusion AV `core\target` + bench, re-mesure sur CI Linux sans AV ;
   pistes : listing batché, mmap, heuristique lazy.
 
-## B12 — cargo-geiger inutilisable en local Windows [DOCUMENTÉ — Phase 3]
-- **Symptôme** : échec `rust-src`/link + timeout 15 min (rebuild monde avec ses flags).
-- **Cause** : geiger 0.13 + toolchain MSVC récente (conflit composant rust-src).
-- **Correctif** : audit `unsafe` manuel (grep : 0 manuscrit, glue FRB générée
-  uniquement) + job CI Ubuntu `supply-chain` qui exécute geiger proprement.
-- **Non-régression** : `AUDIT_SECURITE.md` consigne le résultat manuel ; CI fait foi.
+## B12 — cargo-geiger : flag `--output-file` inexistant + lourdeur locale [CORRIGÉ — Phase 3]
+- **Symptôme** : step CI en échec en 54 s ; localement rebuild-monde + timeout 15 min.
+- **Causes** : (1) `--output-file` n'existe pas dans geiger 0.13 (redirection
+  stdout exigée) ; (2) geiger reconstruit le monde avec ses propres flags
+  (conflit rust-src sur MSVC récent en local).
+- **Correctif** : step réintégré en mode INFORMATIF
+  (`--output-format GitHubMarkdown > geiger.md`, exit 0 même si unsafe trouvé ;
+  le gate sécurité reste deny + audit) ; audit `unsafe` manuel versionné en
+  complément (grep : 0 manuscrit, glue FRB générée).
+- **Non-régression** : job supply-chain rejoué en CI.
