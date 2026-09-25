@@ -120,6 +120,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: '3.47.4'  # épinglé = version validée locale (anti-dérive SDK)
       - name: Dépendances
         run: flutter pub get
         working-directory: app
@@ -141,6 +142,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: '3.47.4'  # épinglé = version validée locale (anti-dérive SDK)
       - name: Tests + lcov
         run: flutter test --coverage
         working-directory: app
@@ -162,6 +164,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: '3.47.4'  # épinglé = version validée locale (anti-dérive SDK)
       - name: Lib native release
         run: cargo build --release --manifest-path core/Cargo.toml
       - name: Test E2E FRB (lib réelle)
@@ -184,6 +187,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: '3.47.4'  # épinglé = version validée locale (anti-dérive SDK)
       - name: Lib statique iOS
         run: ./scripts/build_ios.sh
       - name: Artefact .app
