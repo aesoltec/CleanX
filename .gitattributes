@@ -1,0 +1,16 @@
+# Normalise les fins de ligne (LF) pour des builds reproductibles :
+# `cargo fmt --check` échoue sur CRLF, et l'analyse Flutter/CI exige des
+# fichiers identiques sur les 3 OS. Les runners Windows checkout en CRLF
+# par défaut sans ceci.
+* text=auto eol=lf
+# Binaires : jamais de conversion.
+*.dll binary
+*.exe binary
+*.so binary
+*.a binary
+*.dylib binary
+*.msix binary
+*.apk binary
+*.ico binary
+*.db binary
+*.enc binary
