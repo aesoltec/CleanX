@@ -100,9 +100,10 @@ jobs:
       - name: cargo deny check (licences + bans + advisories)
         run: cargo deny check
         working-directory: core
-      - name: cargo geiger (rapport unsafe)
-        run: cargo geiger --output-format GitHubMarkdown --output-file geiger.md
-        working-directory: core
+      # NOTE (B12) : cargo-geiger RETIRÉ du gate — inutilisable sur toolchains
+      # récentes (rebuild monde + timeout, y compris local). L'audit `unsafe`
+      # est manuel et versionné (grep : 0 manuscrit, glue FRB générée ;
+      # cf. AUDIT_SECURITE.md). Réintroduction si l'outil se stabilise.
       - name: SBOM CycloneDX
         run: cargo cyclonedx --format json --override-filename sbom
         working-directory: core
@@ -112,7 +113,6 @@ jobs:
           name: supply-chain
           path: |
             core/sbom.json
-            core/geiger.md
 
   flutter:
     name: Flutter (${{ matrix.os }})
