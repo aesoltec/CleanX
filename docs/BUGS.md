@@ -102,3 +102,17 @@
   le gate sécurité reste deny + audit) ; audit `unsafe` manuel versionné en
   complément (grep : 0 manuscrit, glue FRB générée).
 - **Non-régression** : job supply-chain rejoué en CI.
+
+## B13 — `.gitignore` racine masquait `app/lib/src/features/quarantine/` [CORRIGÉ — Phase 3]
+- **Sévérité** : critique (CI rouge sur 3 OS + coverage, cause unique).
+- **Symptôme** : `flutter analyze` CI en échec en ~15 s sur ubuntu/macOS/windows
+  (`QuarantinePage isn't defined`) alors que le local est vert.
+- **Cause** : motif `quarantine/` (prévu pour le dossier de données runtime) qui
+  ignorait aussi le code source Flutter ; `quarantine_page.dart` jamais commité.
+  Preuve par reproduction locale : clone frais + `flutter analyze` = mêmes 4 erreurs.
+- **Correctif** : motif ancré `/quarantine/` + exclusion explicite des blobs
+  legacy (`docs/legacy-python/quarantine/`, binaires suspects non versionnables) ;
+  fichier source commité.
+- **Non-régression** : job `lint-workflows` vérifie `git status --porcelain`
+  vide sur les dossiers sources (aucun fichier fantôme possible) ; audit
+  `git status --ignored` des dossiers sources : propre.

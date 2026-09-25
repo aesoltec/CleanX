@@ -35,6 +35,13 @@
   informatif (exit 0 même si unsafe trouvé) : le gate sécurité = deny +
   audit ; l'audit `unsafe` manuel reste versionné en complément.
 - **Test de non-régression** : job supply-chain rejoué en CI.
+
+## D22 — `.gitignore` racine : ancrage + garde CI (2026-09-25)
+- **Rationale** : un motif non ancré (`quarantine/`) a masqué du code source
+  pendant des semaines (B13, CI rouge 3 OS). Correction : motifs ancrés
+  (`/quarantine/`, `docs/legacy-python/quarantine/`) + job CI qui échoue si
+  `git status --porcelain` n'est pas vide sur les sources. Les blobs legacy
+  restent exclus (binaires suspects, même chiffrés).
 - **Alternative écartée** : chirurgie pbxproj non testée (risque de casser
   le runner iOS scaffoldé).
 
