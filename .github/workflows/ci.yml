@@ -18,6 +18,12 @@ jobs:
         run: |
           pip install pyyaml
           python scripts/check_yaml.py .github/workflows/ci.yml .github/workflows/release.yml
+      - name: Aucun fichier source manquant (garde B13)
+        # Échec si du code source n'est pas versionné (ex. règle gitignore
+        # trop large ayant masqué app/lib/src/features/quarantine/).
+        run: |
+          git status --porcelain --untracked-files=all -- app/lib app/test core/src core/tests scripts docs .github | tee /tmp/git-clean.txt
+          test ! -s /tmp/git-clean.txt
 
   rust:
     name: Moteur Rust (${{ matrix.os }})

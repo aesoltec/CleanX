@@ -15,7 +15,12 @@ Thumbs.db
 cle.key
 *.db
 *.db-journal
-quarantine/
+# Dossier de quarantaine RUNTIME à la racine uniquement (ne pas confondre
+# avec app/lib/src/features/quarantine/ = code source Flutter !).
+/quarantine/
+# Échantillons isolés par le prototype historique : blobs chiffrés + JSON,
+# jamais versionnés (binaires suspects, même chiffrés).
+docs/legacy-python/quarantine/
 # SBOM généré (régénérable : cargo cyclonedx, artefact CI)
 core/sbom.json
 # Configs personnelles
