@@ -21,7 +21,6 @@ jobs:
         with:
           name: sbom
           path: core/sbom.json
-          path: sbom.json
 
   build-windows:
     name: Artefacts Windows

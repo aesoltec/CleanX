@@ -96,6 +96,20 @@
   `ensureSemantics` + dispose explicite) ; analyze/tests verts.
 - **Décision** : GO (D18).
 
+## Phase 3 — Professionnalisation (2026-09-25)
+- **CI réelle** : premier run observé (11 échecs initiaux analysés un par un).
+- **Correctifs appliqués avant push** :
+  - `yara-x` SUPPRIMÉ (0 code, 18 CVE dans l'arbre) → audit **0 vulnérabilité** ;
+  - dossiers par défaut avec repli HOME (échec ubuntu anticipé) ;
+  - `llvm-tools-preview` ajouté au job coverage ;
+  - `deny.toml` schéma 0.20 + `cargo deny check` vert local ;
+  - SBOM CycloneDX validé (233 composants) ;
+  - clé quarantaine stricte + `CLEANX_KEY_FALLBACK` explicite (CI ubuntu/eicar).
+- **Dépôt** : `docs/` (gouvernance + `legacy-python/` archivé), LICENSE-MIT +
+  LICENSE-APACHE, CONTRIBUTING, CODE_OF_CONDUCT, templates, CHANGELOG,
+  README à badges, release.yml + CI supply-chain.
+- **Commit `c75dd62` poussé** ; surveillance du run CI en cours.
+
 ## Phase 2 — BONUS (2026-09-24)
 - **Charge 100k** : 100 000 fichiers en 415 s = **14 458/min** (vs 88 703 à
   10k, 108 311 à 2k) — effondrement d'échelle documenté (B11 : AV/FS hôte
