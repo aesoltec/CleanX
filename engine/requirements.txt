@@ -1,0 +1,11 @@
+# --- CleanX Core (moteur Python) ---
+# Bornes basses (pas de pins stricts) : les versions épinglées d'origine
+# (pydantic-core 2.27.2) ne fournissent pas de wheel Python 3.14 et la
+# compilation Rust échoue (PyO3 max 3.13). Le code n'utilise que l'API
+# stable FastAPI/Pydantic, compatible avec les versions récentes.
+fastapi>=0.120
+uvicorn[standard]>=0.34.0
+watchdog>=4.0.2
+pydantic>=2.12
+# aiofiles utilisé pour lecture non-bloquante optionnelle
+aiofiles>=24.1.0

@@ -1,0 +1,20 @@
+# CleanX — ignores racine (s'ajoutent à app/.gitignore et windows/.gitignore)
+# Build Rust (régénérable : cargo build)
+core/target/
+core/fuzz/target/
+# Build Flutter (régénérable : flutter build)
+app/build/
+# Outillage Dart/Flutter
+app/.dart_tool/
+app/.flutter-plugins*
+# Logs et temporaires
+*.log
+.DS_Store
+Thumbs.db
+# Clés et bases LOCALES d'exécution (jamais versionnées)
+cle.key
+*.db
+*.db-journal
+quarantine/
+# Configs personnelles
+.vscode/settings.json

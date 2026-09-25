@@ -1,0 +1,150 @@
+name: CleanX CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust:
+    name: Moteur Rust (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Tests
+        run: cargo test --manifest-path core/Cargo.toml
+        env:
+          CLEANX_FUZZ_N: '20000'
+          CLEANX_EICAR_DISK: ''
+      - name: Clippy strict
+        run: cargo clippy --manifest-path core/Cargo.toml --all-targets -- -D warnings
+      - name: Format
+        run: cargo fmt --manifest-path core/Cargo.toml --check
+      - name: Audit vulnérabilités
+        run: |
+          cargo install cargo-audit --locked
+          cargo audit --file core/Cargo.lock
+
+  rust-coverage:
+    name: Couverture Rust (seuil 70 %)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - name: Installer cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --locked
+      - name: Couverture (hors généré, échec sous 70 %)
+        run: >
+          cargo llvm-cov --manifest-path core/Cargo.toml
+          --lcov --output-path lcov.info
+          --ignore-filename-regex 'frb_generated\.rs'
+          --fail-under-lines 70
+      - name: Publier rapport
+        uses: actions/upload-artifact@v4
+        with:
+          name: couverture-rust
+          path: lcov.info
+
+  eicar-linux:
+    name: EICAR disque réel (Linux, sans AV)
+    runs-on: ubuntu-latest
+    env:
+      CLEANX_EICAR_DISK: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Test EICAR bout-en-bout
+        run: cargo test --manifest-path core/Cargo.toml --test eicar_disque -- --nocapture
+
+  flutter:
+    name: Flutter (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Dépendances
+        run: flutter pub get
+        working-directory: app
+      - name: Localisations
+        run: flutter gen-l10n
+        working-directory: app
+      - name: Analyse
+        run: flutter analyze
+        working-directory: app
+      - name: Tests (moteur simulé)
+        run: flutter test
+        working-directory: app
+
+  dart-coverage:
+    name: Couverture Dart (seuil 60 %)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Tests + lcov
+        run: flutter test --coverage
+        working-directory: app
+      - name: Vérifier seuil manuel (hors généré) ≥ 60 %
+        run: python3 scripts/check_coverage.py app/coverage/lcov.info 60
+      - name: Publier rapport
+        uses: actions/upload-artifact@v4
+        with:
+          name: couverture-dart
+          path: app/coverage/lcov.info
+
+  windows-e2e:
+    name: Windows E2E (lib native + FFI)
+    runs-on: windows-latest
+    needs: [rust, flutter]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Lib native release
+        run: cargo build --release --manifest-path core/Cargo.toml
+      - name: Test E2E FRB (lib réelle)
+        run: flutter test test/frb_e2e_test.dart
+        working-directory: app
+      - name: Build Windows
+        run: |
+          ./scripts/build_windows.ps1
+          flutter build windows --release --dart-define=CLEANX_FRB=true
+        working-directory: app
+
+  ios-unsigned:
+    name: iOS non signé (compilation seule)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,x86_64-apple-ios
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Lib statique iOS
+        run: ./scripts/build_ios.sh
+      - name: Artefact .app
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app-unsigned
+          path: app/build/ios/iphoneos/Runner.app

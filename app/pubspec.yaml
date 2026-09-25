@@ -1,0 +1,41 @@
+name: cleanx_ui
+description: CleanX Antivirus multiplateforme — UI Flutter + moteur Rust (FFI flutter_rust_bridge).
+publish_to: "none"
+version: 2.0.0
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  flutter_rust_bridge: 2.13.0
+  freezed_annotation: ^3.0.0
+  intl: any
+  path_provider: ^2.1.0
+  pdf: ^3.13.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  mocktail: ^1.0.0
+  build_runner: ^2.4.0
+  freezed: ^3.0.0
+  msix: ^3.18.0
+
+# Packaging MSIX (distribution compressée — voir scripts/build_windows.ps1).
+msix_config:
+  display_name: CleanX Antivirus
+  publisher_display_name: CleanX
+  identity_name: CleanX.CleanXAntivirus
+  msix_version: 2.0.0.0
+  logo_path: windows/runner/resources/app_icon.ico
+  capabilities: ""
+
+flutter:
+  uses-material-design: true
+  generate: true

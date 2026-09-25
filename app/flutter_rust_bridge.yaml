@@ -1,0 +1,10 @@
+# Pont FFI CleanX — flutter_rust_bridge v2.13.0.
+# Génération (depuis app/) : flutter_rust_bridge_codegen generate
+# Versions épinglées et alignées : lib Rust = package Dart = codegen = 2.13.0.
+rust_input: crate::api
+rust_root: ../core
+dart_output: lib/src/rust
+dart_entrypoint_class_name: CleanxCore
+add_mod_to_lib: true
+dart_format: true
+rust_format: true

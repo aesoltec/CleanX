@@ -1,0 +1,80 @@
+[package]
+name = "cleanx_core"
+version = "2.0.0"
+edition = "2021"
+rust-version = "1.78"
+description = "Moteur antivirus CleanX : signatures, heuristique, surveillance temps réel, quarantaine chiffrée. Exposé à Flutter via flutter_rust_bridge (FFI)."
+license = "MIT OR Apache-2.0"
+
+[lib]
+name = "cleanx_core"
+# cdylib/staticlib : bibliothèques natives par plateforme (.dll/.so/.dylib/.a).
+# rlib : tests et codegen.
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[features]
+default = []
+# Analyse YARA expérimentale (compilation longue, API yara-x susceptible d'évoluer).
+yara = ["dep:yara-x"]
+
+[dependencies]
+# Exécution asynchrone : runtime multi-thread + workers de scan parallèle.
+tokio = { version = "1", features = ["rt-multi-thread", "fs", "time", "sync", "macros", "io-util"] }
+# Empruntes SHA-256.
+sha2 = "0.10"
+hex = "0.4"
+# Persistance locale (signatures, quarantaine, logs, planification). `bundled`
+# compile SQLite en statique : aucun SQLite système requis (Windows/macOS/Linux/Android/iOS).
+rusqlite = { version = "0.32", features = ["bundled"] }
+# Motifs heuristiques.
+regex = "1"
+# Surveillance fichiers cross-platform (inotify / FSEvents / ReadDirectoryChangesW).
+notify = "8"
+# Quarantaine chiffrée AES-256-GCM + dérivation de clé Argon2.
+aes-gcm = "0.10"
+argon2 = "0.5"
+# Coffre OS pour la clé de quarantaine (DPAPI Windows, Keychain macOS/iOS,
+# Secret Service Linux, Keystore Android). Mode `v1` = API simple.
+keyring = { version = "4", features = ["v1"] }
+rand = "0.8"
+# Sérialisation (config, rapports).
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Erreurs typées exposées à Dart.
+thiserror = "2"
+# Logs structurés JSON + rotation quotidienne.
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+tracing-appender = "0.2"
+# Pont FFI vers Flutter (génère les bindings Dart).
+flutter_rust_bridge = "2.13.0"
+# Identifiants de scan uniques.
+uuid = { version = "1", features = ["v4"] }
+# Vérification Ed25519 des mises à jour de signatures.
+ed25519-dalek = "2"
+# Client HTTPS du dépôt de signatures (certificats natifs par plateforme).
+reqwest = "0.12"
+# Inventaire processus cross-platform (base détection rootkit userland).
+sysinfo = "0.36"
+# Moteur YARA optionnel (feature `yara` uniquement).
+yara-x = { version = "0.12", optional = true }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { version = "1", features = ["rt-multi-thread", "fs", "time", "sync", "macros", "io-util"] }
+
+[profile.release]
+# Binaires natifs compacts par plateforme.
+# strip + panic=abort (cdylib : pas d'unwind FFI de toute façon).
+# opt-level="z" RÉVOQUÉ (Cycle 3) : -40 % débit mesuré pour ~0 octet gagné.
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+
+[lints.clippy]
+# Le glue FFI généré par FRB (`frb_generated.rs`) déréférence des pointeurs
+# bruts par conception ; ce lint (durci en clippy 1.98) n'est pas encore dans
+# la allow-list du générateur 2.13.0. Aucun pointeur brut manuscrit dans le
+# code (vérifié : `grep unsafe` = 0 hors fichier généré) — cf. AUDIT_SECURITE.md.
+not_unsafe_ptr_arg_deref = "allow"
