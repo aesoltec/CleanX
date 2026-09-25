@@ -16,289 +16,200 @@ import 'quarantine.dart';
 import 'rootkit.dart';
 import 'scheduler.dart';
 
-abstract class CleanxCoreApiImplPlatform extends BaseApiImpl<CleanxCoreWire> {
-  CleanxCoreApiImplPlatform({
-    required super.handler,
-    required super.wire,
-    required super.generalizedFrbRustBinding,
-    required super.portManager,
-  });
 
-  @protected
-  AnyhowException dco_decode_AnyhowException(dynamic raw);
 
-  @protected
-  RustStreamSink<EvenementMoteur> dco_decode_StreamSink_evenement_moteur_Sse(
-      dynamic raw);
 
-  @protected
-  String dco_decode_String(dynamic raw);
+                abstract class CleanxCoreApiImplPlatform extends BaseApiImpl<CleanxCoreWire> {
+                  CleanxCoreApiImplPlatform({
+                    required super.handler,
+                    required super.wire,
+                    required super.generalizedFrbRustBinding,
+                    required super.portManager,
+                  });
 
-  @protected
-  AnalyseHeuristique dco_decode_analyse_heuristique(dynamic raw);
+                  
 
-  @protected
-  bool dco_decode_bool(dynamic raw);
+                  @protected AnyhowException dco_decode_AnyhowException(dynamic raw);
 
-  @protected
-  CleanXError dco_decode_clean_x_error(dynamic raw);
+@protected RustStreamSink<EvenementMoteur> dco_decode_StreamSink_evenement_moteur_Sse(dynamic raw);
 
-  @protected
-  EntreeLog dco_decode_entree_log(dynamic raw);
+@protected String dco_decode_String(dynamic raw);
 
-  @protected
-  EvenementMoteur dco_decode_evenement_moteur(dynamic raw);
+@protected AnalyseHeuristique dco_decode_analyse_heuristique(dynamic raw);
 
-  @protected
-  FichierQuarantaine dco_decode_fichier_quarantaine(dynamic raw);
+@protected bool dco_decode_bool(dynamic raw);
 
-  @protected
-  int dco_decode_i_32(dynamic raw);
+@protected CleanXError dco_decode_clean_x_error(dynamic raw);
 
-  @protected
-  PlatformInt64 dco_decode_i_64(dynamic raw);
+@protected EntreeLog dco_decode_entree_log(dynamic raw);
 
-  @protected
-  List<String> dco_decode_list_String(dynamic raw);
+@protected EvenementMoteur dco_decode_evenement_moteur(dynamic raw);
 
-  @protected
-  List<EntreeLog> dco_decode_list_entree_log(dynamic raw);
+@protected FichierQuarantaine dco_decode_fichier_quarantaine(dynamic raw);
 
-  @protected
-  List<FichierQuarantaine> dco_decode_list_fichier_quarantaine(dynamic raw);
+@protected int dco_decode_i_32(dynamic raw);
 
-  @protected
-  List<Planification> dco_decode_list_planification(dynamic raw);
+@protected PlatformInt64 dco_decode_i_64(dynamic raw);
 
-  @protected
-  List<int> dco_decode_list_prim_u_8_loose(dynamic raw);
+@protected List<String> dco_decode_list_String(dynamic raw);
 
-  @protected
-  Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
+@protected List<EntreeLog> dco_decode_list_entree_log(dynamic raw);
 
-  @protected
-  List<ProcessusAnalyse> dco_decode_list_processus_analyse(dynamic raw);
+@protected List<FichierQuarantaine> dco_decode_list_fichier_quarantaine(dynamic raw);
 
-  @protected
-  String? dco_decode_opt_String(dynamic raw);
+@protected List<Planification> dco_decode_list_planification(dynamic raw);
 
-  @protected
-  Planification dco_decode_planification(dynamic raw);
+@protected List<int> dco_decode_list_prim_u_8_loose(dynamic raw);
 
-  @protected
-  ProcessusAnalyse dco_decode_processus_analyse(dynamic raw);
+@protected Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
-  @protected
-  StatutGlobal dco_decode_statut_global(dynamic raw);
+@protected List<ProcessusAnalyse> dco_decode_list_processus_analyse(dynamic raw);
 
-  @protected
-  int dco_decode_u_32(dynamic raw);
+@protected String? dco_decode_opt_String(dynamic raw);
 
-  @protected
-  BigInt dco_decode_u_64(dynamic raw);
+@protected Planification dco_decode_planification(dynamic raw);
 
-  @protected
-  int dco_decode_u_8(dynamic raw);
+@protected ProcessusAnalyse dco_decode_processus_analyse(dynamic raw);
 
-  @protected
-  void dco_decode_unit(dynamic raw);
+@protected StatutGlobal dco_decode_statut_global(dynamic raw);
 
-  @protected
-  VerdictHeuristique dco_decode_verdict_heuristique(dynamic raw);
+@protected int dco_decode_u_32(dynamic raw);
 
-  @protected
-  AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer);
+@protected BigInt dco_decode_u_64(dynamic raw);
 
-  @protected
-  RustStreamSink<EvenementMoteur> sse_decode_StreamSink_evenement_moteur_Sse(
-      SseDeserializer deserializer);
+@protected int dco_decode_u_8(dynamic raw);
 
-  @protected
-  String sse_decode_String(SseDeserializer deserializer);
+@protected void dco_decode_unit(dynamic raw);
 
-  @protected
-  AnalyseHeuristique sse_decode_analyse_heuristique(
-      SseDeserializer deserializer);
+@protected VerdictHeuristique dco_decode_verdict_heuristique(dynamic raw);
 
-  @protected
-  bool sse_decode_bool(SseDeserializer deserializer);
+@protected AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer);
 
-  @protected
-  CleanXError sse_decode_clean_x_error(SseDeserializer deserializer);
+@protected RustStreamSink<EvenementMoteur> sse_decode_StreamSink_evenement_moteur_Sse(SseDeserializer deserializer);
 
-  @protected
-  EntreeLog sse_decode_entree_log(SseDeserializer deserializer);
+@protected String sse_decode_String(SseDeserializer deserializer);
 
-  @protected
-  EvenementMoteur sse_decode_evenement_moteur(SseDeserializer deserializer);
+@protected AnalyseHeuristique sse_decode_analyse_heuristique(SseDeserializer deserializer);
 
-  @protected
-  FichierQuarantaine sse_decode_fichier_quarantaine(
-      SseDeserializer deserializer);
+@protected bool sse_decode_bool(SseDeserializer deserializer);
 
-  @protected
-  int sse_decode_i_32(SseDeserializer deserializer);
+@protected CleanXError sse_decode_clean_x_error(SseDeserializer deserializer);
 
-  @protected
-  PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
+@protected EntreeLog sse_decode_entree_log(SseDeserializer deserializer);
 
-  @protected
-  List<String> sse_decode_list_String(SseDeserializer deserializer);
+@protected EvenementMoteur sse_decode_evenement_moteur(SseDeserializer deserializer);
 
-  @protected
-  List<EntreeLog> sse_decode_list_entree_log(SseDeserializer deserializer);
+@protected FichierQuarantaine sse_decode_fichier_quarantaine(SseDeserializer deserializer);
 
-  @protected
-  List<FichierQuarantaine> sse_decode_list_fichier_quarantaine(
-      SseDeserializer deserializer);
+@protected int sse_decode_i_32(SseDeserializer deserializer);
 
-  @protected
-  List<Planification> sse_decode_list_planification(
-      SseDeserializer deserializer);
+@protected PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
 
-  @protected
-  List<int> sse_decode_list_prim_u_8_loose(SseDeserializer deserializer);
+@protected List<String> sse_decode_list_String(SseDeserializer deserializer);
 
-  @protected
-  Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
+@protected List<EntreeLog> sse_decode_list_entree_log(SseDeserializer deserializer);
 
-  @protected
-  List<ProcessusAnalyse> sse_decode_list_processus_analyse(
-      SseDeserializer deserializer);
+@protected List<FichierQuarantaine> sse_decode_list_fichier_quarantaine(SseDeserializer deserializer);
 
-  @protected
-  String? sse_decode_opt_String(SseDeserializer deserializer);
+@protected List<Planification> sse_decode_list_planification(SseDeserializer deserializer);
 
-  @protected
-  Planification sse_decode_planification(SseDeserializer deserializer);
+@protected List<int> sse_decode_list_prim_u_8_loose(SseDeserializer deserializer);
 
-  @protected
-  ProcessusAnalyse sse_decode_processus_analyse(SseDeserializer deserializer);
+@protected Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
-  @protected
-  StatutGlobal sse_decode_statut_global(SseDeserializer deserializer);
+@protected List<ProcessusAnalyse> sse_decode_list_processus_analyse(SseDeserializer deserializer);
 
-  @protected
-  int sse_decode_u_32(SseDeserializer deserializer);
+@protected String? sse_decode_opt_String(SseDeserializer deserializer);
 
-  @protected
-  BigInt sse_decode_u_64(SseDeserializer deserializer);
+@protected Planification sse_decode_planification(SseDeserializer deserializer);
 
-  @protected
-  int sse_decode_u_8(SseDeserializer deserializer);
+@protected ProcessusAnalyse sse_decode_processus_analyse(SseDeserializer deserializer);
 
-  @protected
-  void sse_decode_unit(SseDeserializer deserializer);
+@protected StatutGlobal sse_decode_statut_global(SseDeserializer deserializer);
 
-  @protected
-  VerdictHeuristique sse_decode_verdict_heuristique(
-      SseDeserializer deserializer);
+@protected int sse_decode_u_32(SseDeserializer deserializer);
 
-  @protected
-  void sse_encode_AnyhowException(
-      AnyhowException self, SseSerializer serializer);
+@protected BigInt sse_decode_u_64(SseDeserializer deserializer);
 
-  @protected
-  void sse_encode_StreamSink_evenement_moteur_Sse(
-      RustStreamSink<EvenementMoteur> self, SseSerializer serializer);
+@protected int sse_decode_u_8(SseDeserializer deserializer);
 
-  @protected
-  void sse_encode_String(String self, SseSerializer serializer);
+@protected void sse_decode_unit(SseDeserializer deserializer);
 
-  @protected
-  void sse_encode_analyse_heuristique(
-      AnalyseHeuristique self, SseSerializer serializer);
+@protected VerdictHeuristique sse_decode_verdict_heuristique(SseDeserializer deserializer);
 
-  @protected
-  void sse_encode_bool(bool self, SseSerializer serializer);
+@protected void sse_encode_AnyhowException(AnyhowException self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_clean_x_error(CleanXError self, SseSerializer serializer);
+@protected void sse_encode_StreamSink_evenement_moteur_Sse(RustStreamSink<EvenementMoteur> self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_entree_log(EntreeLog self, SseSerializer serializer);
+@protected void sse_encode_String(String self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_evenement_moteur(
-      EvenementMoteur self, SseSerializer serializer);
+@protected void sse_encode_analyse_heuristique(AnalyseHeuristique self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_fichier_quarantaine(
-      FichierQuarantaine self, SseSerializer serializer);
+@protected void sse_encode_bool(bool self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_i_32(int self, SseSerializer serializer);
+@protected void sse_encode_clean_x_error(CleanXError self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
+@protected void sse_encode_entree_log(EntreeLog self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_list_String(List<String> self, SseSerializer serializer);
+@protected void sse_encode_evenement_moteur(EvenementMoteur self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_list_entree_log(
-      List<EntreeLog> self, SseSerializer serializer);
+@protected void sse_encode_fichier_quarantaine(FichierQuarantaine self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_list_fichier_quarantaine(
-      List<FichierQuarantaine> self, SseSerializer serializer);
+@protected void sse_encode_i_32(int self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_list_planification(
-      List<Planification> self, SseSerializer serializer);
+@protected void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_list_prim_u_8_loose(List<int> self, SseSerializer serializer);
+@protected void sse_encode_list_String(List<String> self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_list_prim_u_8_strict(
-      Uint8List self, SseSerializer serializer);
+@protected void sse_encode_list_entree_log(List<EntreeLog> self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_list_processus_analyse(
-      List<ProcessusAnalyse> self, SseSerializer serializer);
+@protected void sse_encode_list_fichier_quarantaine(List<FichierQuarantaine> self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_opt_String(String? self, SseSerializer serializer);
+@protected void sse_encode_list_planification(List<Planification> self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_planification(Planification self, SseSerializer serializer);
+@protected void sse_encode_list_prim_u_8_loose(List<int> self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_processus_analyse(
-      ProcessusAnalyse self, SseSerializer serializer);
+@protected void sse_encode_list_prim_u_8_strict(Uint8List self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_statut_global(StatutGlobal self, SseSerializer serializer);
+@protected void sse_encode_list_processus_analyse(List<ProcessusAnalyse> self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_u_32(int self, SseSerializer serializer);
+@protected void sse_encode_opt_String(String? self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_u_64(BigInt self, SseSerializer serializer);
+@protected void sse_encode_planification(Planification self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_u_8(int self, SseSerializer serializer);
+@protected void sse_encode_processus_analyse(ProcessusAnalyse self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_unit(void self, SseSerializer serializer);
+@protected void sse_encode_statut_global(StatutGlobal self, SseSerializer serializer);
 
-  @protected
-  void sse_encode_verdict_heuristique(
-      VerdictHeuristique self, SseSerializer serializer);
-}
+@protected void sse_encode_u_32(int self, SseSerializer serializer);
+
+@protected void sse_encode_u_64(BigInt self, SseSerializer serializer);
+
+@protected void sse_encode_u_8(int self, SseSerializer serializer);
+
+@protected void sse_encode_unit(void self, SseSerializer serializer);
+
+@protected void sse_encode_verdict_heuristique(VerdictHeuristique self, SseSerializer serializer);
+                }
+                
+
 
 // Section: wire_class
 
-class CleanxCoreWire implements BaseWire {
-  factory CleanxCoreWire.fromExternalLibrary(ExternalLibrary lib) =>
-      CleanxCoreWire(lib.ffiDynamicLibrary);
 
-  /// Holds the symbol lookup function.
-  final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
-      _lookup;
+        class CleanxCoreWire implements BaseWire {
 
-  /// The symbols are looked up in [dynamicLibrary].
-  CleanxCoreWire(ffi.DynamicLibrary dynamicLibrary)
-      : _lookup = dynamicLibrary.lookup;
-}
+            factory CleanxCoreWire.fromExternalLibrary(ExternalLibrary lib) =>
+              CleanxCoreWire(lib.ffiDynamicLibrary);
+        
+            /// Holds the symbol lookup function.
+            final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
+                _lookup;
+  
+            /// The symbols are looked up in [dynamicLibrary].
+            CleanxCoreWire(ffi.DynamicLibrary dynamicLibrary)
+                : _lookup = dynamicLibrary.lookup;
+
+            
+        }
+        

@@ -23,6 +23,9 @@ jobs:
         env:
           CLEANX_FUZZ_N: '20000'
           CLEANX_EICAR_DISK: ''
+          # CI headless : pas de Secret Service → repli fichier EXPLICITE
+          # (prod : refus strict, cf. P9/ADR-009).
+          CLEANX_KEY_FALLBACK: '1'
       - name: Clippy strict
         run: cargo clippy --manifest-path core/Cargo.toml --all-targets -- -D warnings
       - name: Format
@@ -59,11 +62,38 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CLEANX_EICAR_DISK: '1'
+      CLEANX_KEY_FALLBACK: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - name: Test EICAR bout-en-bout
         run: cargo test --manifest-path core/Cargo.toml --test eicar_disque -- --nocapture
+
+  supply-chain:
+    name: Supply chain (deny + geiger + SBOM)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Installer outillage
+        run: |
+          cargo install cargo-deny cargo-geiger cargo-cyclonedx --locked
+      - name: cargo deny check (licences + bans + advisories)
+        run: cargo deny check
+        working-directory: core
+      - name: cargo geiger (rapport unsafe)
+        run: cargo geiger --output-format GitHubMarkdown --output-file geiger.md
+        working-directory: core
+      - name: SBOM CycloneDX
+        run: cargo cyclonedx --format json --override-filename sbom
+        working-directory: core
+      - name: Publier rapports
+        uses: actions/upload-artifact@v4
+        with:
+          name: supply-chain
+          path: |
+            core/sbom.json
+            core/geiger.md
 
   flutter:
     name: Flutter (${{ matrix.os }})

@@ -1,0 +1,55 @@
+name: CleanX Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  sbom:
+    name: SBOM CycloneDX
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Installer cargo-cyclonedx
+        run: cargo install cargo-cyclonedx --locked
+      - name: Générer SBOM
+        run: cargo cyclonedx --format json --override-filename sbom
+        working-directory: core
+      - name: Publier SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: core/sbom.json
+          path: sbom.json
+
+  build-windows:
+    name: Artefacts Windows
+    runs-on: windows-latest
+    needs: [sbom]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Lib native + build Windows
+        run: |
+          ./scripts/build_windows.ps1
+          flutter build windows --release --dart-define=CLEANX_FRB=true
+        working-directory: app
+      - name: Package MSIX (distribution compressée)
+        run: dart run msix:create --build-windows false
+        working-directory: app
+      - name: Récupérer SBOM
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom
+          path: core/
+      - name: Release GitHub (MSIX + DLL + SBOM)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            app/build/windows/x64/runner/Release/cleanx_ui.msix
+            core/target/release/cleanx_core.dll
+            core/sbom.json

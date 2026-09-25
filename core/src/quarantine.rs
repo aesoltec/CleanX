@@ -50,17 +50,15 @@ pub fn deriver_cle(phrase: &str, sel_b64: &str) -> Result<[u8; 32], CleanXError>
     Ok(cle)
 }
 
-/// Charge la clé d'installation, par ordre de préférence :
-/// 1. coffre OS (DPAPI/Keychain/Secret Service via `keyring`) ;
-/// 2. fichier `cle.key` (repli : sandbox sans coffre, CI headless…).
+/// Charge la clé d'installation STRICTEMENT depuis le coffre OS
+/// (DPAPI/Keychain/Secret Service via `keyring`).
 ///
-/// Le repli fichier est journalisé par l'appelant via le niveau de
-/// `ProvenanceCle` (traçabilité sans exposer la clé).
-pub fn charger_ou_creer_cle(chemin: &Path) -> Result<[u8; 32], CleanXError> {
-    match cle_depuis_coffre("cleanx", "cle-quarantaine") {
-        Ok((cle, _)) => Ok(cle),
-        Err(_) => charger_ou_creer_cle_fichier(chemin),
-    }
+/// Sans coffre accessible : erreur explicite [`CoffreIndisponible`] — JAMAIS
+/// de repli silencieux (P9). Le repli fichier n'existe que via
+/// [`charger_ou_creer_cle_avec_repli`] quand l'environnement l'autorise
+/// explicitement (dev/CI headless : `CLEANX_KEY_FALLBACK=1`).
+pub fn charger_ou_creer_cle(_chemin: &Path) -> Result<[u8; 32], CleanXError> {
+    cle_depuis_coffre("cleanx", "cle-quarantaine").map(|(cle, _)| cle)
 }
 
 /// Origine effective de la clé (pour traçabilité, jamais la clé elle-même).
@@ -71,14 +69,36 @@ pub enum ProvenanceCle {
 }
 
 /// Variante traçable de [`charger_ou_creer_cle`].
-pub fn charger_ou_creer_cle_trace(chemin: &Path) -> Result<([u8; 32], ProvenanceCle), CleanXError> {
+pub fn charger_ou_creer_cle_trace(
+    _chemin: &Path,
+) -> Result<([u8; 32], ProvenanceCle), CleanXError> {
+    cle_depuis_coffre("cleanx", "cle-quarantaine")
+}
+
+/// Repli fichier EXPLICITE (dev/CI uniquement) : utilisé seulement si
+/// `CLEANX_KEY_FALLBACK=1`, sinon l'erreur du coffre est propagée telle quelle.
+/// Le repli effectif est tracé comme `ProvenanceCle::Fichier`.
+pub fn charger_ou_creer_cle_avec_repli(
+    chemin: &Path,
+) -> Result<([u8; 32], ProvenanceCle), CleanXError> {
     match cle_depuis_coffre("cleanx", "cle-quarantaine") {
-        Ok((cle, prov)) => Ok((cle, prov)),
-        Err(_) => Ok((
-            charger_ou_creer_cle_fichier(chemin)?,
-            ProvenanceCle::Fichier,
-        )),
+        Ok(ok) => Ok(ok),
+        Err(e) => {
+            if repli_fichier_autorise() {
+                Ok((
+                    charger_ou_creer_cle_fichier(chemin)?,
+                    ProvenanceCle::Fichier,
+                ))
+            } else {
+                Err(e)
+            }
+        }
     }
+}
+
+/// L'échappatoire fichier est-elle explicitement autorisée ? (jamais en prod).
+pub(crate) fn repli_fichier_autorise() -> bool {
+    std::env::var("CLEANX_KEY_FALLBACK").as_deref() == Ok("1")
 }
 
 /// Lit ou crée la clé 32 o dans le coffre OS (hexadécimal stocké).
@@ -87,8 +107,8 @@ fn cle_depuis_coffre(
     compte: &str,
 ) -> Result<([u8; 32], ProvenanceCle), CleanXError> {
     let entree =
-        keyring::v1::Entry::new(service, compte).map_err(|e| CleanXError::Quarantaine {
-            detail: format!("coffre indisponible : {e}"),
+        keyring::v1::Entry::new(service, compte).map_err(|e| CleanXError::CoffreIndisponible {
+            detail: format!("coffre inaccessible : {e}"),
         })?;
     // Lecture, sinon génération + stockage (concurrent-safe : le perdant
     // écrase avec la même longueur, puis relit — ici simplifié : dernier
@@ -101,17 +121,17 @@ fn cle_depuis_coffre(
             let hex_cle = hex::encode(cle);
             entree
                 .set_password(&hex_cle)
-                .map_err(|e| CleanXError::Quarantaine {
+                .map_err(|e| CleanXError::CoffreIndisponible {
                     detail: format!("coffre inscriptible : {e}"),
                 })?;
             hex_cle
         }
     };
-    let brut = hex::decode(hex_cle.trim()).map_err(|_| CleanXError::Quarantaine {
+    let brut = hex::decode(hex_cle.trim()).map_err(|_| CleanXError::CoffreIndisponible {
         detail: "clé du coffre corrompue".into(),
     })?;
     if brut.len() != 32 {
-        return Err(CleanXError::Quarantaine {
+        return Err(CleanXError::CoffreIndisponible {
             detail: "clé du coffre : 32 octets attendus".into(),
         });
     }
@@ -367,14 +387,39 @@ mod tests {
     #[test]
     fn cle_coffre_ou_fichier_stable() {
         let _garde = VERROU_COFFRE.lock().unwrap();
-        // Propriété : deux chargements successifs donnent la même clé,
-        // que le coffre OS soit disponible ou non (repli fichier).
+        // Propriété : deux chargements successifs donnent la même clé
+        // via le coffre OS (strict, sans repli silencieux).
         let dir = tempfile::tempdir().unwrap();
         let chemin = dir.path().join("cle2.key");
-        let (a, _) = charger_ou_creer_cle_trace(&chemin).unwrap();
-        let (b, _) = charger_ou_creer_cle_trace(&chemin).unwrap();
+        let (a, prov_a) = charger_ou_creer_cle_trace(&chemin).unwrap();
+        let (b, prov_b) = charger_ou_creer_cle_trace(&chemin).unwrap();
         assert_eq!(a, b);
+        assert_eq!(prov_a, ProvenanceCle::CoffreOs);
+        assert_eq!(prov_b, ProvenanceCle::CoffreOs);
         assert_ne!(a, [0u8; 32]);
+    }
+
+    #[test]
+    fn repli_fichier_explicite_par_env() {
+        let _garde = VERROU_COFFRE.lock().unwrap();
+        // Échappatoire dev/CI : stable quel que soit le chemin effectif.
+        std::env::set_var("CLEANX_KEY_FALLBACK", "1");
+        let dir = tempfile::tempdir().unwrap();
+        let chemin = dir.path().join("cle3.key");
+        let (a, _) = charger_ou_creer_cle_avec_repli(&chemin).unwrap();
+        let (b, _) = charger_ou_creer_cle_avec_repli(&chemin).unwrap();
+        assert_eq!(a, b);
+        std::env::remove_var("CLEANX_KEY_FALLBACK");
+    }
+
+    #[test]
+    fn fichier_direct_deterministe() {
+        // Hors coffre : roundtrip pur, sans variable d'environnement.
+        let dir = tempfile::tempdir().unwrap();
+        let chemin = dir.path().join("cle4.key");
+        let a = charger_ou_creer_cle_fichier(&chemin).unwrap();
+        let b = charger_ou_creer_cle_fichier(&chemin).unwrap();
+        assert_eq!(a, b);
     }
 
     #[test]

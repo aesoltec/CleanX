@@ -41,6 +41,10 @@ pub enum CleanXError {
     #[error("Quarantaine impossible : {detail}")]
     Quarantaine { detail: String },
 
+    /// Coffre OS inaccessible et aucun repli autorisé (refus explicite).
+    #[error("Coffre de clés indisponible : {detail}")]
+    CoffreIndisponible { detail: String },
+
     /// Échec de la surveillance temps réel.
     #[error("Surveillance impossible : {detail}")]
     Surveillance { detail: String },

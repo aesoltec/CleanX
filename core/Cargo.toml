@@ -14,8 +14,10 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 
 [features]
 default = []
-# Analyse YARA expérimentale (compilation longue, API yara-x susceptible d'évoluer).
-yara = ["dep:yara-x"]
+# NOTE (B05/ADR-010) : le support YARA a été RETIRÉ (dépôt v2.0).
+# yara-x 0.12 entraînait wasmtime/rsa avec CVE HIGH/CRITICAL dans le lockfile
+# pour une fonctionnalité jamais implémentée. Réintroduction exigée :
+# wasmtime corrigé + ré-audit + vraie implémentation derrière feature.
 
 [dependencies]
 # Exécution asynchrone : runtime multi-thread + workers de scan parallèle.
@@ -56,8 +58,6 @@ ed25519-dalek = "2"
 reqwest = "0.12"
 # Inventaire processus cross-platform (base détection rootkit userland).
 sysinfo = "0.36"
-# Moteur YARA optionnel (feature `yara` uniquement).
-yara-x = { version = "0.12", optional = true }
 
 [dev-dependencies]
 tempfile = "3"

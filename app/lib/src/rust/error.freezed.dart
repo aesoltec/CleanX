@@ -58,6 +58,7 @@ extension CleanXErrorPatterns on CleanXError {
     TResult Function(CleanXError_CheminInvalide value)? cheminInvalide,
     TResult Function(CleanXError_BaseCorrompue value)? baseCorrompue,
     TResult Function(CleanXError_Quarantaine value)? quarantaine,
+    TResult Function(CleanXError_CoffreIndisponible value)? coffreIndisponible,
     TResult Function(CleanXError_Surveillance value)? surveillance,
     TResult Function(CleanXError_ScanAnnule value)? scanAnnule,
     TResult Function(CleanXError_ScanDejaEnCours value)? scanDejaEnCours,
@@ -81,6 +82,8 @@ extension CleanXErrorPatterns on CleanXError {
         return baseCorrompue(_that);
       case CleanXError_Quarantaine() when quarantaine != null:
         return quarantaine(_that);
+      case CleanXError_CoffreIndisponible() when coffreIndisponible != null:
+        return coffreIndisponible(_that);
       case CleanXError_Surveillance() when surveillance != null:
         return surveillance(_that);
       case CleanXError_ScanAnnule() when scanAnnule != null:
@@ -122,6 +125,8 @@ extension CleanXErrorPatterns on CleanXError {
     required TResult Function(CleanXError_CheminInvalide value) cheminInvalide,
     required TResult Function(CleanXError_BaseCorrompue value) baseCorrompue,
     required TResult Function(CleanXError_Quarantaine value) quarantaine,
+    required TResult Function(CleanXError_CoffreIndisponible value)
+        coffreIndisponible,
     required TResult Function(CleanXError_Surveillance value) surveillance,
     required TResult Function(CleanXError_ScanAnnule value) scanAnnule,
     required TResult Function(CleanXError_ScanDejaEnCours value)
@@ -145,6 +150,8 @@ extension CleanXErrorPatterns on CleanXError {
         return baseCorrompue(_that);
       case CleanXError_Quarantaine():
         return quarantaine(_that);
+      case CleanXError_CoffreIndisponible():
+        return coffreIndisponible(_that);
       case CleanXError_Surveillance():
         return surveillance(_that);
       case CleanXError_ScanAnnule():
@@ -180,6 +187,7 @@ extension CleanXErrorPatterns on CleanXError {
     TResult? Function(CleanXError_CheminInvalide value)? cheminInvalide,
     TResult? Function(CleanXError_BaseCorrompue value)? baseCorrompue,
     TResult? Function(CleanXError_Quarantaine value)? quarantaine,
+    TResult? Function(CleanXError_CoffreIndisponible value)? coffreIndisponible,
     TResult? Function(CleanXError_Surveillance value)? surveillance,
     TResult? Function(CleanXError_ScanAnnule value)? scanAnnule,
     TResult? Function(CleanXError_ScanDejaEnCours value)? scanDejaEnCours,
@@ -202,6 +210,8 @@ extension CleanXErrorPatterns on CleanXError {
         return baseCorrompue(_that);
       case CleanXError_Quarantaine() when quarantaine != null:
         return quarantaine(_that);
+      case CleanXError_CoffreIndisponible() when coffreIndisponible != null:
+        return coffreIndisponible(_that);
       case CleanXError_Surveillance() when surveillance != null:
         return surveillance(_that);
       case CleanXError_ScanAnnule() when scanAnnule != null:
@@ -238,6 +248,7 @@ extension CleanXErrorPatterns on CleanXError {
     TResult Function(String chemin)? cheminInvalide,
     TResult Function(String detail)? baseCorrompue,
     TResult Function(String detail)? quarantaine,
+    TResult Function(String detail)? coffreIndisponible,
     TResult Function(String detail)? surveillance,
     TResult Function()? scanAnnule,
     TResult Function()? scanDejaEnCours,
@@ -261,6 +272,8 @@ extension CleanXErrorPatterns on CleanXError {
         return baseCorrompue(_that.detail);
       case CleanXError_Quarantaine() when quarantaine != null:
         return quarantaine(_that.detail);
+      case CleanXError_CoffreIndisponible() when coffreIndisponible != null:
+        return coffreIndisponible(_that.detail);
       case CleanXError_Surveillance() when surveillance != null:
         return surveillance(_that.detail);
       case CleanXError_ScanAnnule() when scanAnnule != null:
@@ -298,6 +311,7 @@ extension CleanXErrorPatterns on CleanXError {
     required TResult Function(String chemin) cheminInvalide,
     required TResult Function(String detail) baseCorrompue,
     required TResult Function(String detail) quarantaine,
+    required TResult Function(String detail) coffreIndisponible,
     required TResult Function(String detail) surveillance,
     required TResult Function() scanAnnule,
     required TResult Function() scanDejaEnCours,
@@ -320,6 +334,8 @@ extension CleanXErrorPatterns on CleanXError {
         return baseCorrompue(_that.detail);
       case CleanXError_Quarantaine():
         return quarantaine(_that.detail);
+      case CleanXError_CoffreIndisponible():
+        return coffreIndisponible(_that.detail);
       case CleanXError_Surveillance():
         return surveillance(_that.detail);
       case CleanXError_ScanAnnule():
@@ -354,6 +370,7 @@ extension CleanXErrorPatterns on CleanXError {
     TResult? Function(String chemin)? cheminInvalide,
     TResult? Function(String detail)? baseCorrompue,
     TResult? Function(String detail)? quarantaine,
+    TResult? Function(String detail)? coffreIndisponible,
     TResult? Function(String detail)? surveillance,
     TResult? Function()? scanAnnule,
     TResult? Function()? scanDejaEnCours,
@@ -376,6 +393,8 @@ extension CleanXErrorPatterns on CleanXError {
         return baseCorrompue(_that.detail);
       case CleanXError_Quarantaine() when quarantaine != null:
         return quarantaine(_that.detail);
+      case CleanXError_CoffreIndisponible() when coffreIndisponible != null:
+        return coffreIndisponible(_that.detail);
       case CleanXError_Surveillance() when surveillance != null:
         return surveillance(_that.detail);
       case CleanXError_ScanAnnule() when scanAnnule != null:
@@ -808,6 +827,72 @@ class _$CleanXError_QuarantaineCopyWithImpl<$Res>
     Object? detail = null,
   }) {
     return _then(CleanXError_Quarantaine(
+      detail: null == detail
+          ? _self.detail
+          : detail // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+
+class CleanXError_CoffreIndisponible extends CleanXError {
+  const CleanXError_CoffreIndisponible({required this.detail}) : super._();
+
+  final String detail;
+
+  /// Create a copy of CleanXError
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $CleanXError_CoffreIndisponibleCopyWith<CleanXError_CoffreIndisponible>
+      get copyWith => _$CleanXError_CoffreIndisponibleCopyWithImpl<
+          CleanXError_CoffreIndisponible>(this, _$identity);
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is CleanXError_CoffreIndisponible &&
+            (identical(other.detail, detail) || other.detail == detail));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, detail);
+
+  @override
+  String toString() {
+    return 'CleanXError.coffreIndisponible(detail: $detail)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $CleanXError_CoffreIndisponibleCopyWith<$Res>
+    implements $CleanXErrorCopyWith<$Res> {
+  factory $CleanXError_CoffreIndisponibleCopyWith(
+          CleanXError_CoffreIndisponible value,
+          $Res Function(CleanXError_CoffreIndisponible) _then) =
+      _$CleanXError_CoffreIndisponibleCopyWithImpl;
+  @useResult
+  $Res call({String detail});
+}
+
+/// @nodoc
+class _$CleanXError_CoffreIndisponibleCopyWithImpl<$Res>
+    implements $CleanXError_CoffreIndisponibleCopyWith<$Res> {
+  _$CleanXError_CoffreIndisponibleCopyWithImpl(this._self, this._then);
+
+  final CleanXError_CoffreIndisponible _self;
+  final $Res Function(CleanXError_CoffreIndisponible) _then;
+
+  /// Create a copy of CleanXError
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? detail = null,
+  }) {
+    return _then(CleanXError_CoffreIndisponible(
       detail: null == detail
           ? _self.detail
           : detail // ignore: cast_nullable_to_non_nullable

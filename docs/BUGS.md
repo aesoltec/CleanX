@@ -91,3 +91,10 @@
   création/lecture massives, pas le moteur (coût/fichier stable jusqu'à 10k).
 - **Suivi** : exclusion AV `core\target` + bench, re-mesure sur CI Linux sans AV ;
   pistes : listing batché, mmap, heuristique lazy.
+
+## B12 — cargo-geiger inutilisable en local Windows [DOCUMENTÉ — Phase 3]
+- **Symptôme** : échec `rust-src`/link + timeout 15 min (rebuild monde avec ses flags).
+- **Cause** : geiger 0.13 + toolchain MSVC récente (conflit composant rust-src).
+- **Correctif** : audit `unsafe` manuel (grep : 0 manuscrit, glue FRB générée
+  uniquement) + job CI Ubuntu `supply-chain` qui exécute geiger proprement.
+- **Non-régression** : `AUDIT_SECURITE.md` consigne le résultat manuel ; CI fait foi.

@@ -178,16 +178,31 @@ pub fn initialiser(base: String) -> Result<StatutGlobal, CleanXError> {
     let quarantaine_dir = base.join("quarantaine");
     std::fs::create_dir_all(&quarantaine_dir)
         .map_err(|e| crate::error::erreur_io(&quarantaine_dir, e))?;
-    let (cle, provenance) = quarantine::charger_ou_creer_cle_trace(&base.join("cle.key"))?;
+    // Clé STRICTEMENT depuis le coffre ; repli fichier uniquement si
+    // explicitement autorisé (dev/CI : CLEANX_KEY_FALLBACK=1), sinon refus.
+    let (cle, provenance) = match quarantine::charger_ou_creer_cle_trace(&base.join("cle.key")) {
+        Ok(ok) => ok,
+        Err(CleanXError::CoffreIndisponible { .. }) if quarantine::repli_fichier_autorise() => {
+            quarantine::charger_ou_creer_cle_avec_repli(&base.join("cle.key"))?
+        }
+        Err(e) => return Err(e),
+    };
     logging::initialiser(&base.join("logs"), "info")?;
 
     // Dossiers suivis : config persistée, sinon défauts.
     let dossiers = charger_dossiers(&db)?;
     let dossiers = if dossiers.is_empty() {
-        let defaut = racines_rapides()
+        // Téléchargements + Bureau s'ils existent (CI : absents → repli
+        // sur le dossier personnel lui-même, jamais une liste vide qui
+        // désactiverait silencieusement la protection).
+        let mut defaut: Vec<String> = racines_rapides()
             .iter()
             .map(|p| p.to_string_lossy().into_owned())
-            .collect::<Vec<_>>();
+            .collect();
+        let home = dossier_personnel();
+        if defaut.is_empty() && home.is_dir() {
+            defaut.push(home.to_string_lossy().into_owned());
+        }
         sauver_dossiers(&db, &defaut)?;
         defaut
     } else {

@@ -16,5 +16,7 @@ cle.key
 *.db
 *.db-journal
 quarantine/
+# SBOM généré (régénérable : cargo cyclonedx, artefact CI)
+core/sbom.json
 # Configs personnelles
 .vscode/settings.json

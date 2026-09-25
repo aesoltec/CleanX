@@ -1,0 +1,52 @@
+# cargo-deny : licences, vulnérabilités, sources (supply chain).
+# Schéma cargo-deny 0.20 (vérifié par `cargo deny check` en CI).
+# Toute exception ci-dessous DOIT pointer vers une entrée docs/BUGS.md.
+
+[graph]
+targets = [
+  # Plateformes livrées (évite les faux positifs de deps jamais compilées).
+  "x86_64-pc-windows-msvc",
+  "x86_64-unknown-linux-gnu",
+  "aarch64-apple-darwin",
+  "aarch64-linux-android",
+]
+
+[advisories]
+yanked = "deny"
+ignore = [
+  # Liste VIDE par défaut (vérifié 2026-09-25 : 0 avis dans l'arbre compilé).
+  # B05 : wasmtime/rsa du feature `yara` SUPPRIMÉ du manifeste (ADR-010).
+]
+
+[licenses]
+allow = [
+  "MIT",
+  "Apache-2.0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Unicode-DFS-2016",
+  "Unicode-3.0",
+  "CC0-1.0",
+  "Unlicense",
+  "Zlib",
+  "BSL-1.0",
+  "OpenSSL",
+]
+# Copyleft strict interdit : simplement ABSENT de allow (tout ce qui n'est
+# pas listé est refusé). Voir PR cargo-deny#611 (clé `copyleft` retirée).
+# Exceptions documentées (casse exact, justification obligatoire) :
+exceptions = []
+
+[bans]
+# Doublons et sources non crates.io interdits par défaut.
+multiple-versions = "warn"
+wildcards = "deny"
+deny = []
+skip = []
+skip-tree = []
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
