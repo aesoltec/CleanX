@@ -28,6 +28,16 @@
 - **Alternative écartée** : chirurgie pbxproj non testée (risque de casser
   le runner iOS scaffoldé).
 
+## D21 — Geiger réintégré en informatif, pas en gate (2026-09-25)
+- **Rationale** : l'échec CI venait d'un flag inexistant (`--output-file`),
+  pas de l'outil — correction config, pas suppression (règle point de
+  contrôle §2 : corriger le YAML, pas baisser le gate). Geiger reste
+  informatif (exit 0 même si unsafe trouvé) : le gate sécurité = deny +
+  audit ; l'audit `unsafe` manuel reste versionné en complément.
+- **Test de non-régression** : job supply-chain rejoué en CI.
+- **Alternative écartée** : chirurgie pbxproj non testée (risque de casser
+  le runner iOS scaffoldé).
+
 ## D13 — Phase 2 Cycle 6 (Android APK) : GO (2026-09-24)
 - **Critères** : 3 ABI `.so` release ✅, `flutter build apk` FRB **63 Mo** ✅
   (`dist/cleanx-2.0.0-release.apk`), aucune erreur Gradle/NDK ✅.
