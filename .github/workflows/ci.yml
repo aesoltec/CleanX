@@ -177,21 +177,19 @@ jobs:
         working-directory: app
 
   ios-unsigned:
-    name: iOS non signé (compilation seule)
+    name: iOS libs natives (sans liaison .app)
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-ios,x86_64-apple-ios
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version: '3.47.4'  # épinglé = version validée locale (anti-dérive SDK)
-      - name: Lib statique iOS
-        run: ./scripts/build_ios.sh
-      - name: Artefact .app
+      - name: Libs statiques iOS
+        run: ./scripts/build_ios.sh --libs-only
+      - name: Artefacts .a
         uses: actions/upload-artifact@v4
         with:
-          name: ios-app-unsigned
-          path: app/build/ios/iphoneos/Runner.app
+          name: ios-libs
+          path: |
+            core/target/aarch64-apple-ios/release/libcleanx_core.a
+            core/target/x86_64-apple-ios/release/libcleanx_core.a

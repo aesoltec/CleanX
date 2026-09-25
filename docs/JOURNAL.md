@@ -110,6 +110,24 @@
   README à badges, release.yml + CI supply-chain.
 - **Commit `c75dd62` poussé** ; surveillance du run CI en cours.
 
+## Phase 3 — Run CI : diagnostics et correctifs (2026-09-25)
+- **Run initial observé** : EICAR Linux ✅ ; 11 échecs (Analyse Flutter ×3,
+  Tests ubuntu, Coverage ×2, Audit windows, iOS script, macOS bloqué).
+- **Diagnostics sans logs** (run bloqué par job macOS) :
+  - Audit windows : exit 1 normal (18 avis) → suppression `yara-x` (0 code
+    l'utilisait) → audit **0/0**, ADR-010.
+  - Tests ubuntu : `initialiser` sans `~/Downloads` (+ pas de Secret Service)
+    → repli HOME + `CLEANX_KEY_FALLBACK` explicite en CI.
+  - Coverage : `llvm-tools-preview` manquant supposé (ajouté).
+  - Analyse Flutter ×3 OS : dérive SDK (lock commité, SDK non épinglé) →
+    `flutter-version: 3.47.4` partout.
+  - Hypothèse blocage macOS : prompt Keychain headless (couvert par le
+    fallback explicite CI).
+- **Dépôt** : `docs/` + `legacy-python/` archivé, LICENSE-*/CONTRIBUTING/CoC/
+  templates/CHANGELOG, README badges, `deny.toml` 0.20, SBOM validé (233),
+  release.yml corrigé (clé dupliquée → check strict `check_yaml.py`).
+- **Décisions** : D20+ (à compléter aux résultats).
+
 ## Phase 2 — BONUS (2026-09-24)
 - **Charge 100k** : 100 000 fichiers en 415 s = **14 458/min** (vs 88 703 à
   10k, 108 311 à 2k) — effondrement d'échelle documenté (B11 : AV/FS hôte
