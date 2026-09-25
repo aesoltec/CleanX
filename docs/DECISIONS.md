@@ -20,6 +20,14 @@
   distribution GO. UPX rejeté (sécurité). Piste : allègement framework
   (suppression flutter_localizations inutiles ?) au long cours.
 
+## D20 — Phase 3 CI : job iOS réduit aux `.a` (2026-09-25)
+- **Rationale** : `flutter build ios` exige la liaison Xcode du staticlib,
+  invérifiable sans Mac ; tenter le link en aveugle = rouge quasi certain.
+  Option conservatrice : CI prouve la compilation iOS des `.a`, procédure
+  de liaison documentée (ADR-005).
+- **Alternative écartée** : chirurgie pbxproj non testée (risque de casser
+  le runner iOS scaffoldé).
+
 ## D13 — Phase 2 Cycle 6 (Android APK) : GO (2026-09-24)
 - **Critères** : 3 ABI `.so` release ✅, `flutter build apk` FRB **63 Mo** ✅
   (`dist/cleanx-2.0.0-release.apk`), aucune erreur Gradle/NDK ✅.
