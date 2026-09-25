@@ -6,6 +6,19 @@ on:
   pull_request:
 
 jobs:
+  lint-workflows:
+    name: Lint YAML strict (anti-duplicats)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Clés dupliquées (PyYAML strict)
+        run: |
+          pip install pyyaml
+          python scripts/check_yaml.py .github/workflows/ci.yml .github/workflows/release.yml
+
   rust:
     name: Moteur Rust (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
