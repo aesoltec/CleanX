@@ -50,17 +50,6 @@ pub fn deriver_cle(phrase: &str, sel_b64: &str) -> Result<[u8; 32], CleanXError>
     Ok(cle)
 }
 
-/// Charge la clé d'installation STRICTEMENT depuis le coffre OS
-/// (DPAPI/Keychain/Secret Service via `keyring`).
-///
-/// Sans coffre accessible : erreur explicite [`CoffreIndisponible`] — JAMAIS
-/// de repli silencieux (P9). Le repli fichier n'existe que via
-/// [`charger_ou_creer_cle_avec_repli`] quand l'environnement l'autorise
-/// explicitement (dev/CI headless : `CLEANX_KEY_FALLBACK=1`).
-pub fn charger_ou_creer_cle(_chemin: &Path) -> Result<[u8; 32], CleanXError> {
-    cle_depuis_coffre("cleanx", "cle-quarantaine").map(|(cle, _)| cle)
-}
-
 /// Origine effective de la clé (pour traçabilité, jamais la clé elle-même).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProvenanceCle {
@@ -68,32 +57,22 @@ pub enum ProvenanceCle {
     Fichier,
 }
 
-/// Variante traçable de [`charger_ou_creer_cle`].
-pub fn charger_ou_creer_cle_trace(
-    _chemin: &Path,
-) -> Result<([u8; 32], ProvenanceCle), CleanXError> {
-    cle_depuis_coffre("cleanx", "cle-quarantaine")
-}
-
-/// Repli fichier EXPLICITE (dev/CI uniquement) : utilisé seulement si
-/// `CLEANX_KEY_FALLBACK=1`, sinon l'erreur du coffre est propagée telle quelle.
+/// Repli fichier EXPLICITE (dev/CI uniquement) : si `CLEANX_KEY_FALLBACK=1`,
+/// le coffre n'est MÊME PAS TOUCHÉ (appel direct au fichier, aucun risque
+/// de prompt bloquant en headless). Sans la variable : coffre strict.
 /// Le repli effectif est tracé comme `ProvenanceCle::Fichier`.
 pub fn charger_ou_creer_cle_avec_repli(
     chemin: &Path,
 ) -> Result<([u8; 32], ProvenanceCle), CleanXError> {
-    match cle_depuis_coffre("cleanx", "cle-quarantaine") {
-        Ok(ok) => Ok(ok),
-        Err(e) => {
-            if repli_fichier_autorise() {
-                Ok((
-                    charger_ou_creer_cle_fichier(chemin)?,
-                    ProvenanceCle::Fichier,
-                ))
-            } else {
-                Err(e)
-            }
-        }
+    // Évitement total du coffre si repli autorisé (headless : l'API peut
+    // bloquer sur un prompt au lieu d'errer) ; coffre strict sinon.
+    if repli_fichier_autorise() {
+        return Ok((
+            charger_ou_creer_cle_fichier(chemin)?,
+            ProvenanceCle::Fichier,
+        ));
     }
+    cle_depuis_coffre("cleanx", "cle-quarantaine")
 }
 
 /// L'échappatoire fichier est-elle explicitement autorisée ? (jamais en prod).

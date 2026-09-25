@@ -83,6 +83,9 @@
   stabilité vérifiée ×2 runs. Production/integration unaffected (1 lecture/init).
 - **Note** : un credential aléatoire inoffensif subsiste dans le Credential
   Manager du poste (réutilisé sainement par l'app réelle).
+- **Durcissement (Phase 3)** : avec `CLEANX_KEY_FALLBACK=1`, le coffre n'est
+  même plus touché (évite les prompts bloquants headless) ; fonctions
+  strictes mortes supprimées (`charger_ou_creer_cle[_trace]`).
 
 ## B11 — Effondrement du débit à 100k fichiers (14k/min vs 88k à 10k) [ANALYSÉ — BONUS]
 - **Sévérité** : moyenne (robustesse OK : 100k fichiers, 0 crash, 0 OOM en 415 s).

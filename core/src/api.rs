@@ -178,15 +178,11 @@ pub fn initialiser(base: String) -> Result<StatutGlobal, CleanXError> {
     let quarantaine_dir = base.join("quarantaine");
     std::fs::create_dir_all(&quarantaine_dir)
         .map_err(|e| crate::error::erreur_io(&quarantaine_dir, e))?;
-    // Clé STRICTEMENT depuis le coffre ; repli fichier uniquement si
-    // explicitement autorisé (dev/CI : CLEANX_KEY_FALLBACK=1), sinon refus.
-    let (cle, provenance) = match quarantine::charger_ou_creer_cle_trace(&base.join("cle.key")) {
-        Ok(ok) => ok,
-        Err(CleanXError::CoffreIndisponible { .. }) if quarantine::repli_fichier_autorise() => {
-            quarantine::charger_ou_creer_cle_avec_repli(&base.join("cle.key"))?
-        }
-        Err(e) => return Err(e),
-    };
+    // Clé : coffre strict par défaut ; repli fichier uniquement si
+    // explicitement autorisé (dev/CI : CLEANX_KEY_FALLBACK=1, qui évite
+    // tout appel potentiellement bloquant au coffre en headless).
+    // Sans coffre ni autorisation : refus explicite (jamais silencieux).
+    let (cle, provenance) = quarantine::charger_ou_creer_cle_avec_repli(&base.join("cle.key"))?;
     logging::initialiser(&base.join("logs"), "info")?;
 
     // Dossiers suivis : config persistée, sinon défauts.
