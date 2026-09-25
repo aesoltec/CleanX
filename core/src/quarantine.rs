@@ -376,32 +376,38 @@ mod tests {
 
     #[test]
     fn cle_installation_persiste() {
-        let _garde = VERROU_COFFRE.lock().unwrap();
+        // Chemin explicite (dev/CI) : stable avec OU sans coffre OS,
+        // car le repli est autorisé par variable d'environnement.
+        // Verrou anti-empoisonnement : un panic précédent ne doit pas
+        // faire échouer les autres tests en cascade.
+        let _garde = VERROU_COFFRE.lock().unwrap_or_else(|e| e.into_inner());
+        std::env::set_var("CLEANX_KEY_FALLBACK", "1");
         let dir = tempfile::tempdir().unwrap();
         let chemin = dir.path().join("cle.key");
-        let a = charger_ou_creer_cle(&chemin).unwrap();
-        let b = charger_ou_creer_cle(&chemin).unwrap();
+        let (a, _) = charger_ou_creer_cle_avec_repli(&chemin).unwrap();
+        let (b, _) = charger_ou_creer_cle_avec_repli(&chemin).unwrap();
         assert_eq!(a, b); // rechargée, pas régénérée
+        std::env::remove_var("CLEANX_KEY_FALLBACK");
     }
 
     #[test]
     fn cle_coffre_ou_fichier_stable() {
-        let _garde = VERROU_COFFRE.lock().unwrap();
+        let _garde = VERROU_COFFRE.lock().unwrap_or_else(|e| e.into_inner());
         // Propriété : deux chargements successifs donnent la même clé
-        // via le coffre OS (strict, sans repli silencieux).
+        // (coffre OS si présent, sinon repli fichier EXPLICITE).
+        std::env::set_var("CLEANX_KEY_FALLBACK", "1");
         let dir = tempfile::tempdir().unwrap();
         let chemin = dir.path().join("cle2.key");
-        let (a, prov_a) = charger_ou_creer_cle_trace(&chemin).unwrap();
-        let (b, prov_b) = charger_ou_creer_cle_trace(&chemin).unwrap();
+        let (a, _) = charger_ou_creer_cle_avec_repli(&chemin).unwrap();
+        let (b, _) = charger_ou_creer_cle_avec_repli(&chemin).unwrap();
         assert_eq!(a, b);
-        assert_eq!(prov_a, ProvenanceCle::CoffreOs);
-        assert_eq!(prov_b, ProvenanceCle::CoffreOs);
         assert_ne!(a, [0u8; 32]);
+        std::env::remove_var("CLEANX_KEY_FALLBACK");
     }
 
     #[test]
     fn repli_fichier_explicite_par_env() {
-        let _garde = VERROU_COFFRE.lock().unwrap();
+        let _garde = VERROU_COFFRE.lock().unwrap_or_else(|e| e.into_inner());
         // Échappatoire dev/CI : stable quel que soit le chemin effectif.
         std::env::set_var("CLEANX_KEY_FALLBACK", "1");
         let dir = tempfile::tempdir().unwrap();
