@@ -24,6 +24,7 @@ pub mod error;
 pub mod frb_generated;
 pub mod heuristics;
 pub mod logging;
+pub mod mode;
 pub mod quarantine;
 pub mod rootkit;
 pub mod scheduler;

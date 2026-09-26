@@ -153,6 +153,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modeJeuDesc => 'Scans paused, detection without auto-quarantine';
 
   @override
+  String get modeDecision => 'Decision mode';
+
+  @override
+  String get modePrudent => 'Cautious (recommended)';
+
+  @override
+  String get modePrudentDesc =>
+      'Asks before any action. No automatic quarantine.';
+
+  @override
+  String get modeAuto => 'Automatic';
+
+  @override
+  String get modeAutoDesc =>
+      'Auto-quarantine on confirmed threat. Enable explicitly.';
+
+  @override
+  String get modeAgressif => 'Aggressive';
+
+  @override
+  String get modeAgressifDesc =>
+      'Auto-quarantine from score ≥ 50. Never deletes.';
+
+  @override
+  String get modeSilencieux => 'Silent';
+
+  @override
+  String get modeSilencieuxDesc => 'Logs only, takes no action.';
+
+  @override
   String get processusSuspects => 'Suspicious processes';
 
   @override

@@ -88,4 +88,16 @@ void main() {
     expect(suspects, hasLength(1));
     expect(suspects.first.suspect, isTrue);
   });
+
+  test('mode décision : Prudent par défaut, bascule explicite', () async {
+    final c = _conteneur();
+    addTearDown(c.dispose);
+    // Défaut usine exigé par P14 (ni réseau ni disque : valeur initiale).
+    expect(c.read(modeDecisionProvider), ModeDecision.prudent);
+    final notifier = c.read(modeDecisionProvider.notifier);
+    await notifier.definir(ModeDecision.automatique);
+    expect(c.read(modeDecisionProvider), ModeDecision.automatique);
+    await notifier.synchroniser();
+    expect(c.read(modeDecisionProvider), ModeDecision.automatique);
+  });
 }

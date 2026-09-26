@@ -68,6 +68,9 @@ class MoteurSimule implements MoteurCleanX {
           fichier: r'C:\Users\demo\Downloads\facture.pdf.exe',
           menace: 'Heuristique[65] : Double extension trompeuse',
           action: 'mis en quarantaine (#1)',
+          score: 65,
+          signaux: ['Double extension trompeuse'],
+          critique: false,
         );
       }
       yield ProgressionMoteur(
@@ -202,6 +205,18 @@ class MoteurSimule implements MoteurCleanX {
 
   @override
   Future<bool> modeJeuActif() async => _modeJeu;
+
+  ModeDecision _modeDecision = ModeDecision.prudent;
+
+  @override
+  Future<ModeDecision> definirMode(ModeDecision mode) async {
+    final precedent = _modeDecision;
+    _modeDecision = mode;
+    return precedent;
+  }
+
+  @override
+  Future<ModeDecision> modeActuel() async => _modeDecision;
 
   @override
   Future<List<ProcessusDto>> listerProcessus() async => const [

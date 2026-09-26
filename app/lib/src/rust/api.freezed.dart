@@ -166,8 +166,8 @@ extension EvenementMoteurPatterns on EvenementMoteur {
     TResult Function(
             String scanId, String fichier, BigInt traites, BigInt total)?
         progression,
-    TResult Function(
-            String fichier, String menace, String action, String? sha256)?
+    TResult Function(String fichier, String menace, String action,
+            String? sha256, int score, List<String> signaux, bool critique)?
         menace,
     TResult Function(String scanId, BigInt total, BigInt menaces, bool annule)?
         scanTermine,
@@ -182,7 +182,8 @@ extension EvenementMoteurPatterns on EvenementMoteur {
         return progression(
             _that.scanId, _that.fichier, _that.traites, _that.total);
       case EvenementMoteur_Menace() when menace != null:
-        return menace(_that.fichier, _that.menace, _that.action, _that.sha256);
+        return menace(_that.fichier, _that.menace, _that.action, _that.sha256,
+            _that.score, _that.signaux, _that.critique);
       case EvenementMoteur_ScanTermine() when scanTermine != null:
         return scanTermine(
             _that.scanId, _that.total, _that.menaces, _that.annule);
@@ -212,8 +213,8 @@ extension EvenementMoteurPatterns on EvenementMoteur {
     required TResult Function(
             String scanId, String fichier, BigInt traites, BigInt total)
         progression,
-    required TResult Function(
-            String fichier, String menace, String action, String? sha256)
+    required TResult Function(String fichier, String menace, String action,
+            String? sha256, int score, List<String> signaux, bool critique)
         menace,
     required TResult Function(
             String scanId, BigInt total, BigInt menaces, bool annule)
@@ -228,7 +229,8 @@ extension EvenementMoteurPatterns on EvenementMoteur {
         return progression(
             _that.scanId, _that.fichier, _that.traites, _that.total);
       case EvenementMoteur_Menace():
-        return menace(_that.fichier, _that.menace, _that.action, _that.sha256);
+        return menace(_that.fichier, _that.menace, _that.action, _that.sha256,
+            _that.score, _that.signaux, _that.critique);
       case EvenementMoteur_ScanTermine():
         return scanTermine(
             _that.scanId, _that.total, _that.menaces, _that.annule);
@@ -255,8 +257,8 @@ extension EvenementMoteurPatterns on EvenementMoteur {
     TResult? Function(
             String scanId, String fichier, BigInt traites, BigInt total)?
         progression,
-    TResult? Function(
-            String fichier, String menace, String action, String? sha256)?
+    TResult? Function(String fichier, String menace, String action,
+            String? sha256, int score, List<String> signaux, bool critique)?
         menace,
     TResult? Function(String scanId, BigInt total, BigInt menaces, bool annule)?
         scanTermine,
@@ -270,7 +272,8 @@ extension EvenementMoteurPatterns on EvenementMoteur {
         return progression(
             _that.scanId, _that.fichier, _that.traites, _that.total);
       case EvenementMoteur_Menace() when menace != null:
-        return menace(_that.fichier, _that.menace, _that.action, _that.sha256);
+        return menace(_that.fichier, _that.menace, _that.action, _that.sha256,
+            _that.score, _that.signaux, _that.critique);
       case EvenementMoteur_ScanTermine() when scanTermine != null:
         return scanTermine(
             _that.scanId, _that.total, _that.menaces, _that.annule);
@@ -446,13 +449,26 @@ class EvenementMoteur_Menace extends EvenementMoteur {
       {required this.fichier,
       required this.menace,
       required this.action,
-      this.sha256})
-      : super._();
+      this.sha256,
+      required this.score,
+      required final List<String> signaux,
+      required this.critique})
+      : _signaux = signaux,
+        super._();
 
   final String fichier;
   final String menace;
   final String action;
   final String? sha256;
+  final int score;
+  final List<String> _signaux;
+  List<String> get signaux {
+    if (_signaux is EqualUnmodifiableListView) return _signaux;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_signaux);
+  }
+
+  final bool critique;
 
   /// Create a copy of EvenementMoteur
   /// with the given fields replaced by the non-null parameter values.
@@ -470,15 +486,20 @@ class EvenementMoteur_Menace extends EvenementMoteur {
             (identical(other.fichier, fichier) || other.fichier == fichier) &&
             (identical(other.menace, menace) || other.menace == menace) &&
             (identical(other.action, action) || other.action == action) &&
-            (identical(other.sha256, sha256) || other.sha256 == sha256));
+            (identical(other.sha256, sha256) || other.sha256 == sha256) &&
+            (identical(other.score, score) || other.score == score) &&
+            const DeepCollectionEquality().equals(other._signaux, _signaux) &&
+            (identical(other.critique, critique) ||
+                other.critique == critique));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, fichier, menace, action, sha256);
+  int get hashCode => Object.hash(runtimeType, fichier, menace, action, sha256,
+      score, const DeepCollectionEquality().hash(_signaux), critique);
 
   @override
   String toString() {
-    return 'EvenementMoteur.menace(fichier: $fichier, menace: $menace, action: $action, sha256: $sha256)';
+    return 'EvenementMoteur.menace(fichier: $fichier, menace: $menace, action: $action, sha256: $sha256, score: $score, signaux: $signaux, critique: $critique)';
   }
 }
 
@@ -489,7 +510,14 @@ abstract mixin class $EvenementMoteur_MenaceCopyWith<$Res>
           $Res Function(EvenementMoteur_Menace) _then) =
       _$EvenementMoteur_MenaceCopyWithImpl;
   @useResult
-  $Res call({String fichier, String menace, String action, String? sha256});
+  $Res call(
+      {String fichier,
+      String menace,
+      String action,
+      String? sha256,
+      int score,
+      List<String> signaux,
+      bool critique});
 }
 
 /// @nodoc
@@ -508,6 +536,9 @@ class _$EvenementMoteur_MenaceCopyWithImpl<$Res>
     Object? menace = null,
     Object? action = null,
     Object? sha256 = freezed,
+    Object? score = null,
+    Object? signaux = null,
+    Object? critique = null,
   }) {
     return _then(EvenementMoteur_Menace(
       fichier: null == fichier
@@ -526,6 +557,18 @@ class _$EvenementMoteur_MenaceCopyWithImpl<$Res>
           ? _self.sha256
           : sha256 // ignore: cast_nullable_to_non_nullable
               as String?,
+      score: null == score
+          ? _self.score
+          : score // ignore: cast_nullable_to_non_nullable
+              as int,
+      signaux: null == signaux
+          ? _self._signaux
+          : signaux // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      critique: null == critique
+          ? _self.critique
+          : critique // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }

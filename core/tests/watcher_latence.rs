@@ -22,6 +22,9 @@ fn latence_detection_menace_moins_1s() {
     let base = dir.path().join("latence");
     std::fs::create_dir_all(&base).expect("mkdir");
     api::initialiser(base.to_string_lossy().into_owned()).expect("init");
+    // Contrat historique : quarantaine auto = opt-in explicite (P14).
+    // Ce test mesure la voie automatique : on l'active puis on restaure Prudent.
+    api::definir_mode(cleanx_core::mode::ModeDecision::Automatique).expect("mode auto");
 
     let rt = base.join("rt");
     std::fs::create_dir_all(&rt).expect("mkdir rt");
@@ -54,4 +57,5 @@ fn latence_detection_menace_moins_1s() {
     assert!(latence < Duration::from_secs(1), "trop lent : {latence:?}");
 
     api::liberer_ressources().expect("liberer");
+    api::definir_mode(cleanx_core::mode::ModeDecision::Prudent).expect("mode reset");
 }
