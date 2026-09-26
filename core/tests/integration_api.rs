@@ -156,11 +156,19 @@ fn pipeline_bout_en_bout() {
 
     // 12. P14 : en Prudent (défaut), une menace est SIGNALÉE sans action :
     // fichier intact + quarantaine vide. Preuve du consentement par défaut.
-    // B14 : la menace est une source CONFIRMÉE (motif générique enregistré
-    // couvrant le contenu — hex de « powershell »), donc l'Automatique
-    // l'isole tandis que le Prudent (confiance 70 < 95) attend l'humain.
-    cleanx_core::generiques::enregistrer_source("Test-Prudent-Auto:0:*:706F7765727368656C6C")
-        .expect("motif prudent/auto");
+    // Suivi D26 : le marqueur est un hash CONFIRMÉ injecté en base
+    // (confiance 100) — le Prudent signale (jamais d'auto), l'Automatique
+    // opt-in l'isole (100 ≥ 95). Contenu Defender-safe, comme avant.
+    {
+        use sha2::{Digest, Sha256};
+        let sha = hex::encode(Sha256::digest(b"powershell -enc aGVsbG8="));
+        let conn = cleanx_core::db::ouvrir(&base.join("cleanx.db")).expect("open db");
+        conn.execute(
+            "INSERT INTO signatures(hash, nom) VALUES (?1, ?2)",
+            (sha.as_str(), "Test-Prudent-Auto-Confirme"),
+        )
+        .expect("insert menace");
+    }
     api::definir_mode(cleanx_core::mode::ModeDecision::Prudent).expect("mode prudent");
     let menace_dir = base.join("prudent");
     std::fs::create_dir_all(&menace_dir).expect("mkdir prudent");

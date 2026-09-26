@@ -131,7 +131,14 @@
   Program Files/node_modules à 0 quarantaine, règle AGENTS §4bis.
 - **Correctif** : modèle `SourceMenace`+`confiance`, `est_chemin_protege`,
   Prudent auto si confiance ≥ 95 uniquement, `CLEANX_PROTECTED_EXTRA` (dev/CI).
-- **Statut** : CORRIGÉ 2026-09-26. Preuves : lib 47/47, intégration 5/5
+- **Statut** : CORRIGÉ 2026-09-26.
+  **Suivi D26 (2026-09-26, 2 correctifs)** : (1) mitigation en attendant
+  Authenticode — Prudent = jamais d'auto, Automatique = confiance ≥ 95,
+  Agressif = ≥ 80 ET hors zone utilisateur (`est_zone_utilisateur`) ;
+  (2) `CLEANX_PROTECTED_EXTRA` sécurisé — ignoré sans `CLEANX_DEV_MODE=1`,
+  jamais lu en release, entrées validées (refus racines larges / zones
+  utilisateur / `..`), ajouts journalisés (`annoncer_extras`).
+  Preuves : lib 50/50, intégration 6/6, clippy/fmt 0. Preuves : lib 47/47, intégration 5/5
   (dont `faux_positifs.rs`), clippy `-D warnings` 0, fmt 0,
   `flutter analyze` 0, Dart 22/22. Réserve : vérification Authenticode
   native reportée (D26, règle chemin-protégé plus stricte en attendant).

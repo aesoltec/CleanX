@@ -377,14 +377,17 @@ async fn analyser_fichier(
         .map(|s| signatures::confiance(s, heur.score))
         .unwrap_or(0);
     // Chemin protégé (système, confiance, dev) : jamais d'action auto.
+    // Zone utilisateur : jamais d'auto en Agressif (suivi D26).
     let protege = mode::est_chemin_protege(&chemin_txt);
+    let zone_utilisateur = mode::est_zone_utilisateur(&chemin_txt);
 
     if let Some(m) = menace {
         COMPTEUR_MENACES.fetch_add(1, Ordering::Relaxed);
         // Décision d'isolement : mode utilisateur ET surcouche mode jeu
-        // (zéro E/S disque pendant une partie). Protégé ⇒ jamais (B14).
-        let isoler = !MODE_JEU.load(Ordering::Relaxed)
-            && mode::doit_isoler_auto(mode, source, heur.score, protege);
+        // (zéro E/S disque pendant une partie). Les règles de lieu sont
+        // évaluées dans `doit_isoler_auto` (B14 + suivi D26).
+        let mode_jeu = MODE_JEU.load(Ordering::Relaxed);
+        let isoler = !mode_jeu && mode::doit_isoler_auto(mode, source, heur.score, &chemin_txt);
         let action = if isoler {
             let (db2, dir2, cle2, ch2, m2) = (
                 db.to_path_buf(),
@@ -406,13 +409,23 @@ async fn analyser_fichier(
             // Chemin système/confiance/dev : détection affichée, action
             // humaine obligatoire (double confirmation en UI, P18).
             "protégé — confirmation requise (chemin système/confiance)".to_string()
+        } else if mode_jeu {
+            "signalé (quarantaine auto désactivée — mode jeu)".to_string()
         } else {
             match mode {
                 // Défaut usine (P14) : on informe, on attend la décision.
                 mode::ModeDecision::Prudent => "signalé — en attente de décision".to_string(),
                 mode::ModeDecision::Silencieux => "journalisé (mode silencieux)".to_string(),
-                // Mode jeu : surveillance seule.
-                _ => "signalé (quarantaine auto désactivée)".to_string(),
+                // Mitigation D26 : le refus est EXPLIQUÉ (seuil ou zone).
+                mode::ModeDecision::Automatique => {
+                    format!("signalé — confiance {confiance} < 95 (action auto refusée)")
+                }
+                mode::ModeDecision::Agressif if zone_utilisateur => {
+                    "signalé — zone utilisateur (action auto refusée)".to_string()
+                }
+                mode::ModeDecision::Agressif => {
+                    format!("signalé — confiance {confiance} < 80 (action auto refusée)")
+                }
             }
         };
         VerdictFichier {
@@ -585,13 +598,40 @@ async fn executer_scan(racines: Vec<PathBuf>, scan_id: String, sink: &StreamSink
     );
 }
 
+/// Journalise la surcouche `CLEANX_PROTECTED_EXTRA` (audit Correctif 2 §4) :
+/// racines acceptées ET refusées, une fois par scan/protection. Silence
+/// total si rien n'est configuré (cas nominal de production).
+fn annoncer_extras(db: &Path) {
+    let (acceptes, refuses) = mode::lister_extras_avec_refus();
+    if acceptes.is_empty() && refuses.is_empty() {
+        return;
+    }
+    let resume = |liste: &[String]| {
+        let mut l = liste.to_vec();
+        l.sort();
+        l.truncate(10);
+        l.join(", ")
+    };
+    let _ = logging::journaliser(
+        db,
+        "info",
+        &format!(
+            "extras protégés : {} accepté(s) [{}], {} refusé(s) [{}]",
+            acceptes.len(),
+            resume(&acceptes),
+            refuses.len(),
+            resume(&refuses)
+        ),
+    );
+}
 /// Démarre un scan (un seul à la fois). Le `sink` reçoit progression + rapport.
 fn demarrer_scan(
     racines: Vec<PathBuf>,
     prefixe: &str,
     sink: StreamSink<EvenementMoteur>,
 ) -> Result<(), CleanXError> {
-    etat()?; // moteur initialisé ?
+    let e = etat()?; // moteur initialisé ?
+    annoncer_extras(&e.db); // audit Correctif 2 §4 (acceptés + refusés)
     if SCAN_EN_COURS.swap(true, Ordering::SeqCst) {
         return Err(CleanXError::ScanDejaEnCours);
     }
@@ -704,6 +744,7 @@ pub fn activer_protection(sink: StreamSink<EvenementMoteur>) -> Result<(), Clean
         return Ok(()); // déjà active : idempotent
     }
     PROTECTION_STOP.store(false, Ordering::Relaxed);
+    annoncer_extras(&e.db); // audit Correctif 2 §4 (acceptés + refusés)
     let _ = sink.add(EvenementMoteur::Protection { active: true });
     let _ = logging::journaliser(&e.db, "info", "Protection temps réel ACTIVÉE");
 

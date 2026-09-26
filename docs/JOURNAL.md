@@ -241,3 +241,17 @@
   (fuzz 100k 351 s) ; `cargo clippy --all-targets -- -D warnings` exit 0 ;
   `cargo fmt --check` exit 0 ; `flutter analyze` No issues ; `flutter test` 22/22.
 - Reprise mission : P25-P27 ensuite (SPEC_EXPORT légitime, confirmé).
+
+## 2026-09-26 — Suivi B14/D26 : 2 correctifs (vert, réserve Authenticode maintenue)
+- (1) Mitigation : `seuil_confiance_auto` (Prudent None / Auto 95 / Agressif 80),
+  `doit_isoler_auto(mode, source, score, chemin)` (lieux évalués en un point),
+  `est_zone_utilisateur`, messages de refus expliqués (seuil/zone/jeu/protégé).
+  EICAR-disque et étapes P14 passent en opt-in explicite (hash confirmé injecté).
+- (2) EXTRA : `lister_extras[_avec_refus]` + `extra_valide` (DEV_MODE + debug-only
+  + refus larges/utilisateur/traversée), `annoncer_extras` (journal/scan+protection).
+- Tests : `mode.rs` (gating, zones, littéraux D:\Temp/Public//tmp, extras),
+  `faux_positifs.rs` 2/2 (stand-ins + Documents + contre-preuves Auto).
+- Preuves : lib 50/50 ; intégration 6/6 (fuzz 344 s) ; clippy `-D warnings` 0 ;
+  fmt 0. Pas de changement FFI → pas de regen (bindings intacts).
+- Docs : ADR-013 (limites .ndb exactes — `*` supporté, pas de plages/EP/regex),
+  BUGS addendum, JOURNAL. Fichiers : `core/src/{mode,api}.rs`, 3 tests, docs.

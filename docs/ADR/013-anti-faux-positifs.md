@@ -32,3 +32,22 @@
 - **Preuves** : `cargo test --lib` 47/47, intégration 5/5 binaires,
   `clippy -D warnings` 0, `fmt --check` 0, `flutter analyze` 0,
   `flutter test` 22/22.
+
+## Suivi — limites du format `.ndb` simplifié (v2.0, non bloquant, ticket v2.1+)
+
+Le moteur implémente un SOUS-ENSEMBLE documenté de ClamAV `.ndb`
+(`Nom:Type:Offset:Hex`, `core/src/generiques.rs`). Limites EXACTES :
+- **Offsets** : `*` (n'importe où, fenêtre glissante) et positions fixes
+  décimales supportés ; PAS de plages (`min-max`), PAS de relatifs
+  (`EP`, `EP+n`, `EOF-n`) ;
+- **Wildcards** : `??` (octet entier) uniquement ; PAS de demi-octet
+  (`4?`), PAS de répétitions (`{n-m}`, `{-n}`), PAS d'alternatives
+  (`(aa|bb)`), PAS de négations (`!`) ;
+- **Structure** : UNE seule partie par signature ; PAS de multi-parties
+  logiques (AND/OR de sous-signatures), PAS de regex, PAS d'extensions
+  ClamAV (`.ldb`, `.mbl`, bytecode `.cbc`) ;
+- **Types cibles** : `0` (tout fichier) uniquement ;
+- **Bornes anti-bruit/coût** : motifs 4–256 octets décodés, préfixe
+  4 Mo scannés (`MAX_OCTETS_MOTIF`), motif vide → jamais de match ;
+- **Distribution** : registre mémoire amorcé EICAR, pas de fichier `.ndb`
+  persistant versionné (à concevoir en v2.1+ avec le dépôt signé).
