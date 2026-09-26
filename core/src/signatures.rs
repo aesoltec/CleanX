@@ -15,6 +15,27 @@ use crate::CleanXError;
 /// Taille des blocs de lecture (64 Ko : bon compromis disque/mémoire).
 const TAILLE_BLOC: usize = 64 * 1024;
 
+/// Source d'une détection (B14) : détermine la CONFIANCE, donc qui peut agir.
+/// - `SignatureConnue` : hash exact d'un malware confirmé → 100.
+/// - `Generique` : motif d'octets (famille) → 70.
+/// - `Heuristique` : comportement suspect seul → 30–50 (moitié du score).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SourceMenace {
+    SignatureConnue,
+    Generique,
+    Heuristique,
+}
+
+/// Confiance 0–100 associée à une source (calibrage documenté, 4bis).
+pub fn confiance(source: SourceMenace, score_heuristique: u8) -> u8 {
+    match source {
+        SourceMenace::SignatureConnue => 100,
+        SourceMenace::Generique => 70,
+        // Heuristique seule : 35–50 (score 70–100 → moitié, plancher 30).
+        SourceMenace::Heuristique => (score_heuristique / 2).max(30),
+    }
+}
+
 /// Verdict de l'analyse par signatures (jamais d'exception : voir `erreur`).
 #[derive(Debug, Clone)]
 pub struct VerdictSignatures {
@@ -253,16 +274,26 @@ mod tests {
     #[tokio::test]
     async fn hash_connu_detecte_par_signature() {
         // Note : le fichier EICAR *sur disque* est intercepté par Defender
-        // (os error 225) — voir BUGS.md. On teste donc la détection via le
-        // hash seedé `Test.Hash-Demo` (contenu `b"test"`), et EICAR est couvert
-        // au niveau base par `db::tests::base_se_cree_et_contient_eicar`.
+        // (os error 225) — voir BUGS.md. On teste donc le MÉCANISME avec un
+        // hash confirmé injecté dans la base de test (B14 : plus aucun hash
+        // fictif global) ; EICAR reste couvert au niveau base par
+        // `db::tests::base_se_cree_et_contient_eicar`.
         let (_dir, base) = base_test().await;
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("demo.bin");
-        std::fs::write(&p, b"test").unwrap();
+        let contenu = b"contenu-confirme-7f3a-test-mecanisme";
+        std::fs::write(&p, contenu).unwrap();
+        let sha = super::sha256_fichier(&p).await.unwrap();
+        let conn = crate::db::ouvrir(&base).unwrap();
+        conn.execute(
+            "INSERT INTO signatures(hash, nom) VALUES (?1, ?2)",
+            (sha.as_str(), "Test-Mecanisme-Confirme"),
+        )
+        .unwrap();
+        drop(conn);
         let v = verifier_signature(&base, &p).await.unwrap();
         assert!(v.erreur.is_none(), "erreur inattendue : {:?}", v.erreur);
-        assert!(v.menace.unwrap().contains("Test.Hash-Demo"));
+        assert!(v.menace.unwrap().contains("Test-Mecanisme-Confirme"));
     }
 
     #[tokio::test]

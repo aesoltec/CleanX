@@ -1147,6 +1147,7 @@ class CleanxCoreApiImpl extends CleanxCoreApiImplPlatform
           score: dco_decode_u_8(raw[5]),
           signaux: dco_decode_list_String(raw[6]),
           critique: dco_decode_bool(raw[7]),
+          confiance: dco_decode_u_8(raw[8]),
         );
       case 3:
         return EvenementMoteur_ScanTermine(
@@ -1447,6 +1448,7 @@ class CleanxCoreApiImpl extends CleanxCoreApiImplPlatform
         var var_score = sse_decode_u_8(deserializer);
         var var_signaux = sse_decode_list_String(deserializer);
         var var_critique = sse_decode_bool(deserializer);
+        var var_confiance = sse_decode_u_8(deserializer);
         return EvenementMoteur_Menace(
             fichier: var_fichier,
             menace: var_menace,
@@ -1454,7 +1456,8 @@ class CleanxCoreApiImpl extends CleanxCoreApiImplPlatform
             sha256: var_sha256,
             score: var_score,
             signaux: var_signaux,
-            critique: var_critique);
+            critique: var_critique,
+            confiance: var_confiance);
       case 3:
         var var_scanId = sse_decode_String(deserializer);
         var var_total = sse_decode_u_64(deserializer);
@@ -1803,7 +1806,8 @@ class CleanxCoreApiImpl extends CleanxCoreApiImplPlatform
           sha256: final sha256,
           score: final score,
           signaux: final signaux,
-          critique: final critique
+          critique: final critique,
+          confiance: final confiance
         ):
         sse_encode_i_32(2, serializer);
         sse_encode_String(fichier, serializer);
@@ -1813,6 +1817,7 @@ class CleanxCoreApiImpl extends CleanxCoreApiImplPlatform
         sse_encode_u_8(score, serializer);
         sse_encode_list_String(signaux, serializer);
         sse_encode_bool(critique, serializer);
+        sse_encode_u_8(confiance, serializer);
       case EvenementMoteur_ScanTermine(
           scanId: final scanId,
           total: final total,

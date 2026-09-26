@@ -59,7 +59,9 @@ class ProgressionMoteur extends EvenementMoteur {
   double get ratio => total > 0 ? traites / total : 0;
 }
 
-/// Menace détectée (explicable : score + signaux + criticité, P15/P16/P18).
+/// Menace détectée (explicable : score + signaux + criticité + confiance,
+/// P15/P16/P18/B14). `confiance` 0–100 : 100 = hash confirmé, 70 = motif
+/// générique, 30–50 = heuristique seule.
 class MenaceMoteur extends EvenementMoteur {
   final String fichier;
   final String menace;
@@ -68,6 +70,7 @@ class MenaceMoteur extends EvenementMoteur {
   final int score;
   final List<String> signaux;
   final bool critique;
+  final int confiance;
   const MenaceMoteur({
     required this.fichier,
     required this.menace,
@@ -76,6 +79,7 @@ class MenaceMoteur extends EvenementMoteur {
     this.score = 0,
     this.signaux = const [],
     this.critique = false,
+    this.confiance = 0,
   });
 }
 

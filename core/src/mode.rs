@@ -31,19 +31,49 @@ pub fn seuil_quarantaine_auto(mode: ModeDecision) -> Option<u8> {
 }
 
 /// La menace doit-elle être isolée automatiquement dans ce mode ?
-/// `menace_averee` = signature connue OU score ≥ 70 (seuil calibré, P18/4bis).
-pub fn doit_isoler_auto(mode: ModeDecision, menace_averee: bool, score: u8) -> bool {
-    match mode {
-        ModeDecision::Prudent => false,
-        ModeDecision::Silencieux => false,
-        ModeDecision::Automatique => menace_averee,
-        ModeDecision::Agressif => menace_averee || score >= 50,
+/// `source` = `None` si pas de menace. Règles (B14/ADR-013) :
+/// - chemin protégé → JAMAIS (tous modes, même confiance 100 : un binaire
+///   signé ou système exige un consentement humain explicite) ;
+/// - Prudent → seulement confiance ≥ 95 (hash confirmé) ;
+/// - Automatique → sources confirmées (Signature, Générique) ;
+/// - Agressif → toute menace de score ≥ 50 ;
+/// - Silencieux → jamais.
+pub fn doit_isoler_auto(
+    mode: ModeDecision,
+    source: Option<crate::signatures::SourceMenace>,
+    score: u8,
+    protege: bool,
+) -> bool {
+    if protege {
+        return false;
+    }
+    match (mode, source) {
+        (_, None) => false,
+        (ModeDecision::Prudent, Some(s)) => crate::signatures::confiance(s, score) >= 95,
+        (ModeDecision::Silencieux, _) => false,
+        (ModeDecision::Automatique, Some(s)) => matches!(
+            s,
+            crate::signatures::SourceMenace::SignatureConnue
+                | crate::signatures::SourceMenace::Generique
+        ),
+        (ModeDecision::Agressif, Some(_)) => score >= 50,
     }
 }
 
 /// Chemins système critiques : AUCUNE action sans double confirmation (P18).
 /// Comparaison insensible à la casse (Windows) + normalisation des séparateurs.
 pub fn est_chemin_critique(chemin: &str) -> bool {
+    est_chemin_protege(chemin)
+}
+
+/// Chemins protégés contre TOUTE action automatique (B14/4bis) : racines
+/// système + emplacements de confiance (Program Files…) + dossiers de
+/// développement (jamais de binaire signé/projet isolé sans humain).
+/// `CLEANX_PROTECTED_EXTRA` (séparateur `;`) ajoute des racines en dev/CI
+/// pour tester le pipeline sans toucher au vrai système.
+pub fn est_chemin_protege(chemin: &str) -> bool {
+    // Lecture directe (sans cache) : coût négligeable devant une E/S fichier,
+    // et déterminisme total pour les tests (variable modifiable à tout moment).
     let normalise = chemin.replace('\\', "/").to_lowercase();
     const RACINES: &[&str] = &[
         "c:/windows/",
@@ -53,10 +83,43 @@ pub fn est_chemin_critique(chemin: &str) -> bool {
         "/usr/bin/",
         "/etc/",
         "/boot/",
+        "c:/program files/",
+        "c:/program files (x86)/",
     ];
-    RACINES
+    const SEGMENTS_DEV: &[&str] = &[
+        "node_modules",
+        "target",
+        "build",
+        "dist",
+        "out",
+        ".git",
+        "bin",
+        "obj",
+        "vendor",
+        "__pycache__",
+    ];
+    if RACINES
         .iter()
         .any(|r| normalise == r.trim_end_matches('/') || normalise.starts_with(r))
+    {
+        return true;
+    }
+    if normalise
+        .split('/')
+        .any(|segment| SEGMENTS_DEV.contains(&segment))
+    {
+        return true;
+    }
+    let extras: Vec<String> = std::env::var("CLEANX_PROTECTED_EXTRA")
+        .unwrap_or_default()
+        .split(';')
+        .map(|s| s.replace('\\', "/").to_lowercase())
+        .filter(|s| !s.is_empty())
+        .collect();
+    extras.iter().any(|r| {
+        let racine = r.trim_end_matches('/');
+        normalise == racine || normalise.starts_with(&(racine.to_string() + "/"))
+    })
 }
 
 #[cfg(test)]
@@ -75,15 +138,111 @@ mod tests {
 
     #[test]
     fn gating_par_mode() {
-        // Prudent/Silencieux : jamais d'action, même menace avérée.
-        assert!(!doit_isoler_auto(ModeDecision::Prudent, true, 100));
-        assert!(!doit_isoler_auto(ModeDecision::Silencieux, true, 100));
-        // Automatique : seulement menace avérée (pas le simple suspect).
-        assert!(doit_isoler_auto(ModeDecision::Automatique, true, 90));
-        assert!(!doit_isoler_auto(ModeDecision::Automatique, false, 65));
-        // Agressif : suspect ≥ 50 aussi, jamais de suppression (quarantaine).
-        assert!(doit_isoler_auto(ModeDecision::Agressif, false, 55));
-        assert!(!doit_isoler_auto(ModeDecision::Agressif, false, 49));
+        use crate::signatures::SourceMenace;
+        // Prudent : seulement confiance ≥ 95 (hash confirmé), jamais sinon.
+        assert!(doit_isoler_auto(
+            ModeDecision::Prudent,
+            Some(SourceMenace::SignatureConnue),
+            100,
+            false
+        ));
+        assert!(!doit_isoler_auto(
+            ModeDecision::Prudent,
+            Some(SourceMenace::Generique),
+            70,
+            false
+        ));
+        assert!(!doit_isoler_auto(
+            ModeDecision::Prudent,
+            Some(SourceMenace::Heuristique),
+            100,
+            false
+        ));
+        // Silencieux : jamais, même confiance 100.
+        assert!(!doit_isoler_auto(
+            ModeDecision::Silencieux,
+            Some(SourceMenace::SignatureConnue),
+            100,
+            false
+        ));
+        // Automatique : sources confirmées seulement.
+        assert!(doit_isoler_auto(
+            ModeDecision::Automatique,
+            Some(SourceMenace::SignatureConnue),
+            100,
+            false
+        ));
+        assert!(doit_isoler_auto(
+            ModeDecision::Automatique,
+            Some(SourceMenace::Generique),
+            70,
+            false
+        ));
+        assert!(!doit_isoler_auto(
+            ModeDecision::Automatique,
+            Some(SourceMenace::Heuristique),
+            90,
+            false
+        ));
+        assert!(!doit_isoler_auto(ModeDecision::Automatique, None, 0, false));
+        // Agressif : score ≥ 50, jamais de suppression (quarantaine).
+        assert!(doit_isoler_auto(
+            ModeDecision::Agressif,
+            Some(SourceMenace::Heuristique),
+            55,
+            false
+        ));
+        assert!(!doit_isoler_auto(
+            ModeDecision::Agressif,
+            Some(SourceMenace::Heuristique),
+            49,
+            false
+        ));
+        // Protégé : JAMAIS, tous modes, même confiance 100 (B14/4bis).
+        for mode in [
+            ModeDecision::Prudent,
+            ModeDecision::Automatique,
+            ModeDecision::Agressif,
+            ModeDecision::Silencieux,
+        ] {
+            assert!(
+                !doit_isoler_auto(mode, Some(SourceMenace::SignatureConnue), 100, true),
+                "chemin protégé isolé en {mode:?} !"
+            );
+        }
+    }
+
+    #[test]
+    fn confiance_calibree() {
+        use crate::signatures::{confiance, SourceMenace};
+        assert_eq!(confiance(SourceMenace::SignatureConnue, 0), 100);
+        assert_eq!(confiance(SourceMenace::Generique, 0), 70);
+        assert_eq!(confiance(SourceMenace::Heuristique, 70), 35);
+        assert_eq!(confiance(SourceMenace::Heuristique, 100), 50);
+        assert!(confiance(SourceMenace::Heuristique, 100) <= 50);
+    }
+
+    #[test]
+    fn whitelist_chemins_proteges() {
+        // Système (insensible à la casse).
+        assert!(est_chemin_protege(r"C:\Windows\System32\evil.exe"));
+        assert!(est_chemin_protege("/usr/lib/x.so"));
+        assert!(est_chemin_protege("/etc/cron.d/x"));
+        assert!(est_chemin_protege("C:/Program Files/App/app.exe"));
+        // Dossiers de développement (segments).
+        assert!(est_chemin_protege("/home/ali/proj/node_modules/evil.js"));
+        assert!(est_chemin_protege(r"C:\dev\proj\target\debug\evil.exe"));
+        assert!(est_chemin_protege("/home/ali/build/setup.exe"));
+        // Fichiers utilisateur normaux : NON protégés.
+        assert!(!est_chemin_protege("/home/ali/Downloads/evil.exe"));
+        assert!(!est_chemin_protege(r"C:\Users\ali\doc.pdf.exe"));
+        assert!(!est_chemin_protege("/tmp/x"));
+        // Surcouche dev/CI (documentée, sans cache) : direction biaisée
+        // vers la prudence (faux négatifs > faux positifs).
+        std::env::set_var("CLEANX_PROTECTED_EXTRA", "/tmp/fake-sys");
+        assert!(est_chemin_protege("/tmp/fake-sys/evil.exe"));
+        std::env::remove_var("CLEANX_PROTECTED_EXTRA");
+        assert!(!est_chemin_protege("/tmp/fake-sys/evil.exe"));
     }
 
     #[test]

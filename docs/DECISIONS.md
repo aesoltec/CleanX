@@ -159,3 +159,21 @@
 ## D09 — Cycle 5 (perf) : GO (2026-09-23)
 - **Critères** : 108 311 fichiers/min ✅ (> 20 000), clippy/tests verts ✅,
   zéro `expect`/`unwrap` en prod ✅ (audit `grep` : tests uniquement).
+
+## D25 — B14 : calibrage confiance 100/70/30-50 + whitelist (2026-09-26)
+- **Rationale** : STOP mission (faux positifs par hash exact + seeds
+  dangereux). Confiance max-source ; Prudent ≥ 95 ; protégé ⇒ jamais.
+  ADR-013. Registre générique EICAR pré-chargé, base seed EICAR seul.
+- **Alternatives** : seuil Prudent 70 (rejeté : un motif seul n'isole pas) ;
+  suppression pure des modes auto (rejeté : casse P14/Automatique opt-in).
+- **Preuves** : lib 47/47, intégration 5/5, clippy/fmt/analyze 0, Dart 22/22.
+
+## D26 — Authenticode natif REPORTÉ, couvert par règle plus stricte (2026-09-26)
+- **Rationale** : WinVerifyTrust/SecStaticCodeCheck = nouvelle dépendance
+  plateforme + audit (coût > budget incident). Règle chemin-protégé
+  STRICTEMENT plus conservatrice : aucun auto en zone système/confiance/dev
+  même pour fichier NON signé (la signature ne fait qu'élargir, jamais
+  réduire, la protection). Vérification de signature native → ticket
+  roadmap P18-durci, option la moins risquée, décision provisoire.
+- **Preuve** : `tests/faux_positifs.rs` (marqueur confiance 100 en zone
+  protégée → 0 quarantaine même en Agressif).

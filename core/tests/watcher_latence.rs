@@ -15,6 +15,8 @@ type SinkTest = StreamSink<cleanx_core::api::EvenementMoteur, SseCodec>;
 
 /// Score attendu : .exe (20) + powershell -enc (30) + CreateRemoteThread (30) = 80.
 const CONTENU_MENACE: &[u8] = b"outil.exe test\npowershell -enc aGVsbG8=\nCreateRemoteThread demo";
+// Motif générique (B14) couvrant CONTENU_MENACE : hex de « CreateRemoteThread ».
+const MOTIF_WATCHER: &str = "Test-Watcher-Latence:0:*:43726561746552656D6F7465546872656164";
 
 #[test]
 fn latence_detection_menace_moins_1s() {
@@ -22,6 +24,10 @@ fn latence_detection_menace_moins_1s() {
     let base = dir.path().join("latence");
     std::fs::create_dir_all(&base).expect("mkdir");
     api::initialiser(base.to_string_lossy().into_owned()).expect("init");
+    // B14 : le mode Automatique n'isole que les sources CONFIRMÉES (hash ou
+    // motif générique), jamais une heuristique seule. On enregistre donc le
+    // motif couvrant le contenu déclencheur (confiance 70 > 40 heuristique).
+    cleanx_core::generiques::enregistrer_source(MOTIF_WATCHER).expect("motif");
     // Contrat historique : quarantaine auto = opt-in explicite (P14).
     // Ce test mesure la voie automatique : on l'active puis on restaure Prudent.
     api::definir_mode(cleanx_core::mode::ModeDecision::Automatique).expect("mode auto");

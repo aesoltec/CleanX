@@ -1294,6 +1294,7 @@ impl SseDecode for crate::api::EvenementMoteur {
                 let mut var_score = <u8>::sse_decode(deserializer);
                 let mut var_signaux = <Vec<String>>::sse_decode(deserializer);
                 let mut var_critique = <bool>::sse_decode(deserializer);
+                let mut var_confiance = <u8>::sse_decode(deserializer);
                 return crate::api::EvenementMoteur::Menace {
                     fichier: var_fichier,
                     menace: var_menace,
@@ -1302,6 +1303,7 @@ impl SseDecode for crate::api::EvenementMoteur {
                     score: var_score,
                     signaux: var_signaux,
                     critique: var_critique,
+                    confiance: var_confiance,
                 };
             }
             3 => {
@@ -1737,6 +1739,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::EvenementMoteur {
                 score,
                 signaux,
                 critique,
+                confiance,
             } => [
                 2.into_dart(),
                 fichier.into_into_dart().into_dart(),
@@ -1746,6 +1749,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::EvenementMoteur {
                 score.into_into_dart().into_dart(),
                 signaux.into_into_dart().into_dart(),
                 critique.into_into_dart().into_dart(),
+                confiance.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::api::EvenementMoteur::ScanTermine {
@@ -2050,6 +2054,7 @@ impl SseEncode for crate::api::EvenementMoteur {
                 score,
                 signaux,
                 critique,
+                confiance,
             } => {
                 <i32>::sse_encode(2, serializer);
                 <String>::sse_encode(fichier, serializer);
@@ -2059,6 +2064,7 @@ impl SseEncode for crate::api::EvenementMoteur {
                 <u8>::sse_encode(score, serializer);
                 <Vec<String>>::sse_encode(signaux, serializer);
                 <bool>::sse_encode(critique, serializer);
+                <u8>::sse_encode(confiance, serializer);
             }
             crate::api::EvenementMoteur::ScanTermine {
                 scan_id,

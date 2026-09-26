@@ -71,6 +71,7 @@ class MoteurSimule implements MoteurCleanX {
           score: 65,
           signaux: ['Double extension trompeuse'],
           critique: false,
+          confiance: 32,
         );
       }
       yield ProgressionMoteur(

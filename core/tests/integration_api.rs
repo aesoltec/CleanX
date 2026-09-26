@@ -37,7 +37,7 @@ fn pipeline_bout_en_bout() {
 
     // 1. Init + statut.
     let statut = api::initialiser(base_txt.clone()).expect("initialiser");
-    assert!(statut.signatures >= 3);
+    assert!(statut.signatures >= 1);
     assert_eq!(api::statut().expect("statut").signatures, statut.signatures);
 
     // 2. Fonctions pures.
@@ -156,6 +156,11 @@ fn pipeline_bout_en_bout() {
 
     // 12. P14 : en Prudent (défaut), une menace est SIGNALÉE sans action :
     // fichier intact + quarantaine vide. Preuve du consentement par défaut.
+    // B14 : la menace est une source CONFIRMÉE (motif générique enregistré
+    // couvrant le contenu — hex de « powershell »), donc l'Automatique
+    // l'isole tandis que le Prudent (confiance 70 < 95) attend l'humain.
+    cleanx_core::generiques::enregistrer_source("Test-Prudent-Auto:0:*:706F7765727368656C6C")
+        .expect("motif prudent/auto");
     api::definir_mode(cleanx_core::mode::ModeDecision::Prudent).expect("mode prudent");
     let menace_dir = base.join("prudent");
     std::fs::create_dir_all(&menace_dir).expect("mkdir prudent");

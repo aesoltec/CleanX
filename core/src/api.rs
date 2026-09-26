@@ -23,8 +23,8 @@ use flutter_rust_bridge::frb;
 use tokio::runtime::Runtime;
 
 use crate::{
-    heuristics, logging, mode, quarantine, scheduler, self_defense, signatures, watcher,
-    CleanXError,
+    generiques, heuristics, logging, mode, quarantine, scheduler, self_defense, signatures,
+    watcher, CleanXError,
 };
 
 // ================================================================ Types exposés
@@ -62,6 +62,8 @@ pub enum EvenementMoteur {
         score: u8,
         signaux: Vec<String>,
         critique: bool,
+        /// Confiance 0–100 (100 = hash confirmé, 70 = générique, 30–50 = heuristique).
+        confiance: u8,
     },
     /// Fin de scan (naturelle ou annulée).
     ScanTermine {
@@ -85,6 +87,18 @@ struct VerdictFichier {
     score: u8,
     signaux: Vec<String>,
     critique: bool,
+    confiance: u8,
+}
+
+/// Lit jusqu'à 2 Mo pour la recherche de motifs (tolérant : vide si illisible).
+async fn lire_echantillon_async(chemin: &Path) -> Vec<u8> {
+    use tokio::io::AsyncReadExt;
+    let mut buf = Vec::new();
+    if let Ok(f) = tokio::fs::File::open(chemin).await {
+        let mut limite = f.take(2 * 1024 * 1024);
+        let _ = limite.read_to_end(&mut buf).await;
+    }
+    buf
 }
 
 // ================================================================ État global
@@ -291,6 +305,7 @@ async fn analyser_fichier(
                 score: 0,
                 signaux: Vec::new(),
                 critique,
+                confiance: 0,
             }
             .avec_detail(e.to_string())
         }
@@ -305,6 +320,7 @@ async fn analyser_fichier(
             score: 0,
             signaux: Vec::new(),
             critique,
+            confiance: 0,
         }
         .avec_detail(err);
     }
@@ -320,11 +336,25 @@ async fn analyser_fichier(
         verdict: heuristics::VerdictHeuristique::Sain,
     });
 
-    let mut menace = sig.menace.clone();
-    // Menace avérée = signature connue OU score heuristique ≥ 70 (seuil calibré).
-    let menace_averee = sig.menace.is_some() || heur.score >= 70;
+    let mut menace: Option<String> = sig.menace.clone();
+    // Sources candidates (B14) : hash confirmé (100) > motif générique (70) >
+    // heuristique seule (30–50). On retient la PLUS confiante : un malware
+    // connu au comportement suspect s'affiche « Signature », pas « Heuristique ».
+    let mut source = sig
+        .menace
+        .as_ref()
+        .map(|_| signatures::SourceMenace::SignatureConnue);
+    // Motifs génériques (familles, pas juste exacts) : lus une seule fois.
+    let echantillon = lire_echantillon_async(chemin).await;
+    let generique = generiques::analyser_bytes(&echantillon);
+    if source.is_none() {
+        if let Some(ref g) = generique {
+            menace = Some(format!("Générique[{}]", g.nom));
+            source = Some(signatures::SourceMenace::Generique);
+        }
+    }
     if heur.verdict == heuristics::VerdictHeuristique::Menace {
-        menace = Some(format!(
+        let heuristique = Some(format!(
             "Heuristique[{}] : {}",
             heur.score,
             heur.signaux
@@ -334,14 +364,27 @@ async fn analyser_fichier(
                 .collect::<Vec<_>>()
                 .join("; ")
         ));
+        let conf_heur = signatures::confiance(signatures::SourceMenace::Heuristique, heur.score);
+        let conf_actuelle = source
+            .map(|s| signatures::confiance(s, heur.score))
+            .unwrap_or(0);
+        if source.is_none() || conf_heur > conf_actuelle {
+            menace = heuristique;
+            source = Some(signatures::SourceMenace::Heuristique);
+        }
     }
+    let confiance = source
+        .map(|s| signatures::confiance(s, heur.score))
+        .unwrap_or(0);
+    // Chemin protégé (système, confiance, dev) : jamais d'action auto.
+    let protege = mode::est_chemin_protege(&chemin_txt);
 
     if let Some(m) = menace {
         COMPTEUR_MENACES.fetch_add(1, Ordering::Relaxed);
         // Décision d'isolement : mode utilisateur ET surcouche mode jeu
-        // (zéro E/S disque pendant une partie).
+        // (zéro E/S disque pendant une partie). Protégé ⇒ jamais (B14).
         let isoler = !MODE_JEU.load(Ordering::Relaxed)
-            && mode::doit_isoler_auto(mode, menace_averee, heur.score);
+            && mode::doit_isoler_auto(mode, source, heur.score, protege);
         let action = if isoler {
             let (db2, dir2, cle2, ch2, m2) = (
                 db.to_path_buf(),
@@ -359,6 +402,10 @@ async fn analyser_fichier(
                 Ok(Err(e)) => format!("QUARANTAINE ÉCHOUÉE : {e}"),
                 Err(e) => format!("worker quarantaine : {e}"),
             }
+        } else if protege {
+            // Chemin système/confiance/dev : détection affichée, action
+            // humaine obligatoire (double confirmation en UI, P18).
+            "protégé — confirmation requise (chemin système/confiance)".to_string()
         } else {
             match mode {
                 // Défaut usine (P14) : on informe, on attend la décision.
@@ -377,6 +424,7 @@ async fn analyser_fichier(
             score: heur.score,
             signaux: heur.signaux.clone(),
             critique,
+            confiance,
         }
     } else if heur.verdict == heuristics::VerdictHeuristique::Suspect {
         VerdictFichier {
@@ -388,6 +436,7 @@ async fn analyser_fichier(
             score: heur.score,
             signaux: heur.signaux.clone(),
             critique,
+            confiance: 0,
         }
     } else {
         VerdictFichier {
@@ -399,6 +448,7 @@ async fn analyser_fichier(
             score: heur.score,
             signaux: Vec::new(),
             critique,
+            confiance: 0,
         }
     }
 }
@@ -492,6 +542,7 @@ async fn executer_scan(racines: Vec<PathBuf>, scan_id: String, sink: &StreamSink
                     score: v.score,
                     signaux: v.signaux.clone(),
                     critique: v.critique,
+                    confiance: v.confiance,
                 });
                 let _ = logging::journaliser(
                     &e.db,
@@ -708,6 +759,7 @@ pub fn activer_protection(sink: StreamSink<EvenementMoteur>) -> Result<(), Clean
                         score: v.score,
                         signaux: v.signaux.clone(),
                         critique: v.critique,
+                        confiance: v.confiance,
                     });
                     let _ = logging::journaliser(
                         &e.db,

@@ -15,7 +15,7 @@ import 'rootkit.dart';
 import 'scheduler.dart';
 part 'api.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `analyser_fichier`, `avec_detail`, `charger_dossiers`, `demarrer_scan`, `dossier_personnel`, `etat`, `executer_scan`, `lire_mode`, `lister_fichiers_sync`, `racines_completes`, `racines_rapides`, `runtime`, `sauver_dossiers`
+// These functions are ignored because they are not marked as `pub`: `analyser_fichier`, `avec_detail`, `charger_dossiers`, `demarrer_scan`, `dossier_personnel`, `etat`, `executer_scan`, `lire_echantillon_async`, `lire_mode`, `lister_fichiers_sync`, `racines_completes`, `racines_rapides`, `runtime`, `sauver_dossiers`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `EtatMoteur`, `VerdictFichier`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`
 
@@ -217,6 +217,9 @@ sealed class EvenementMoteur with _$EvenementMoteur {
     required int score,
     required List<String> signaux,
     required bool critique,
+
+    /// Confiance 0–100 (100 = hash confirmé, 70 = générique, 30–50 = heuristique).
+    required int confiance,
   }) = EvenementMoteur_Menace;
 
   /// Fin de scan (naturelle ou annulée).

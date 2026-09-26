@@ -87,6 +87,7 @@ class MoteurFrb implements MoteurCleanX {
           score: e.score,
           signaux: e.signaux,
           critique: e.critique,
+          confiance: e.confiance,
         );
       } else if (e is noyau.EvenementMoteur_ScanTermine) {
         return ScanTermineMoteur(
