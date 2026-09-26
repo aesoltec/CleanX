@@ -23,5 +23,8 @@ cle.key
 docs/legacy-python/quarantine/
 # SBOM généré (régénérable : cargo cyclonedx, artefact CI)
 core/sbom.json
+# Binaires de distribution : JAMAIS versionnés (AGENTS.md §1.3 : > 10 Mo et
+# non signés en production). Produits par la CI (artefacts + releases).
+dist/
 # Configs personnelles
 .vscode/settings.json

@@ -50,6 +50,14 @@
   SBOM + audit `unsafe` manuel versionné. Conforme au point de contrôle
   (pas de `continue-on-error`, pas de seuil baissé : suppression documentée
   avec équivalent).
+
+## D24 — `dist/` retiré du versionnement (AGENTS.md §1.3) + travail sur branche (2026-09-26)
+- **Rationale** : les 3 binaires (`cleanx-2.0.0-release.apk` 63 Mo,
+  `cleanx_ui.msix` 32 Mo, `cleanx_core.dll` 5 Mo) violaient deux règles
+  absolues : > 10 Mo dans Git et non signés en production. `git rm --cached`
+  + `.gitignore` (`dist/`) ; distribution via artefacts CI + releases.
+  Branche `mission/p14-prudent-par-defaut` : conformité §1.3 (pas de commit
+  direct sur `main`), PR à la fin du cycle P14.
 - **Alternative écartée** : chirurgie pbxproj non testée (risque de casser
   le runner iOS scaffoldé).
 
