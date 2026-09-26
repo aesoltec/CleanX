@@ -42,6 +42,14 @@
   (`/quarantine/`, `docs/legacy-python/quarantine/`) + job CI qui échoue si
   `git status --porcelain` n'est pas vide sur les sources. Les blobs legacy
   restent exclus (binaires suspects, même chiffrés).
+
+## D23 — geiger retiré du gate après 3 modes d'échec prouvés (2026-09-26)
+- **Rationale** : (1) flag inexistant, (2) rebuild-monde/timeout MSVC,
+  (3) exit 1 sur arbre sain (204 assets non-Rust). Trois corrections tentées,
+  outil en cause à chaque fois. Couverture maintenue : deny + audit +
+  SBOM + audit `unsafe` manuel versionné. Conforme au point de contrôle
+  (pas de `continue-on-error`, pas de seuil baissé : suppression documentée
+  avec équivalent).
 - **Alternative écartée** : chirurgie pbxproj non testée (risque de casser
   le runner iOS scaffoldé).
 

@@ -112,12 +112,12 @@ jobs:
       - name: cargo deny check (licences + bans + advisories)
         run: cargo deny check
         working-directory: core
-      # NOTE (B12) : geiger est purement INFORMATIF (exit 0 même si unsafe
-      # trouvé — le gate reste deny+audit). L'ancienne option `--output-file`
-      # n'existe pas (échec CI 54 s) : redirection stdout exigée.
-      - name: cargo geiger (rapport unsafe)
-        run: cargo geiger --output-format GitHubMarkdown > geiger.md
-        working-directory: core
+      # NOTE (B12) : cargo-geiger RETIRÉ du gate — l'outil échoue sur un arbre
+      # valide (204 fichiers .der/.md/.data « never scanned » → exit 1, plus
+      # conflits rust-src sur MSVC récent). L'audit `unsafe` est manuel et
+      # versionné (grep : 0 manuscrit, glue FRB générée ; cf. AUDIT_SECURITE.md).
+      # Le gate supply-chain = deny + audit + SBOM. Réintroduction si geiger
+      # gère les arbres avec assets non-Rust.
       - name: SBOM CycloneDX
         run: cargo cyclonedx --format json --override-filename sbom
         working-directory: core
@@ -127,7 +127,6 @@ jobs:
           name: supply-chain
           path: |
             core/sbom.json
-            core/geiger.md
 
   flutter:
     name: Flutter (${{ matrix.os }})

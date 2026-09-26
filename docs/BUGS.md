@@ -95,16 +95,16 @@
 - **Suivi** : exclusion AV `core\target` + bench, re-mesure sur CI Linux sans AV ;
   pistes : listing batché, mmap, heuristique lazy.
 
-## B12 — cargo-geiger : flag `--output-file` inexistant + lourdeur locale [CORRIGÉ — Phase 3]
-- **Symptôme** : step CI en échec en 54 s ; localement rebuild-monde + timeout 15 min.
-- **Causes** : (1) `--output-file` n'existe pas dans geiger 0.13 (redirection
-  stdout exigée) ; (2) geiger reconstruit le monde avec ses propres flags
-  (conflit rust-src sur MSVC récent en local).
-- **Correctif** : step réintégré en mode INFORMATIF
-  (`--output-format GitHubMarkdown > geiger.md`, exit 0 même si unsafe trouvé ;
-  le gate sécurité reste deny + audit) ; audit `unsafe` manuel versionné en
-  complément (grep : 0 manuscrit, glue FRB générée).
-- **Non-régression** : job supply-chain rejoué en CI.
+## B12 — cargo-geiger : incompatible avec un arbre valide [RETIRÉ DU GATE — Phase 3]
+- **Symptômes** : (1) flag `--output-file` inexistant ; (2) rebuild-monde +
+  timeout local ; (3) en CI : `error: Found 204 warnings` (« Dependency file
+  was never scanned » sur .der/.md/.data) → exit 1 alors que l'arbre est sain.
+- **Décision** : retrait du gate (D23) — deny + audit + SBOM + audit `unsafe`
+  manuel versionné assurent la couverture. Réintroduction si geiger gère les
+  assets non-Rust. Conforme au point de contrôle (correction tentée 2×,
+  outil en cause prouvé, couverture équivalente maintenue).
+- **Historique** : première tentative (mode informatif) supplantée par le
+  retrait ci-dessus après preuve du 3e mode d'échec.
 
 ## B13 — `.gitignore` racine masquait `app/lib/src/features/quarantine/` [CORRIGÉ — Phase 3]
 - **Sévérité** : critique (CI rouge sur 3 OS + coverage, cause unique).
