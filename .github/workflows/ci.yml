@@ -72,6 +72,12 @@ jobs:
           --lcov --output-path lcov.info
           --ignore-filename-regex 'frb_generated\.rs'
           --fail-under-lines 70
+        env:
+          # CI headless : pas de Secret Service → repli explicite (cf. P9) ;
+          # fuzz réduit (debug instrumenté lent), EICAR réservé à son job.
+          CLEANX_KEY_FALLBACK: '1'
+          CLEANX_FUZZ_N: '20000'
+          CLEANX_EICAR_DISK: ''
       - name: Publier rapport
         uses: actions/upload-artifact@v4
         with:
@@ -189,7 +195,7 @@ jobs:
         working-directory: app
       - name: Build Windows
         run: |
-          ./scripts/build_windows.ps1
+          ../scripts/build_windows.ps1
           flutter build windows --release --dart-define=CLEANX_FRB=true
         working-directory: app
 
