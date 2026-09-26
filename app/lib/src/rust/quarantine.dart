@@ -6,37 +6,42 @@
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+/// Fichier isolé (exposé à Dart).
+class FichierQuarantaine {
+  final PlatformInt64 id;
+  final String nom;
+  final String origine;
+  final String date;
+  final String raison;
+  final int score;
 
-            
+  const FichierQuarantaine({
+    required this.id,
+    required this.nom,
+    required this.origine,
+    required this.date,
+    required this.raison,
+    required this.score,
+  });
 
-            
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      nom.hashCode ^
+      origine.hashCode ^
+      date.hashCode ^
+      raison.hashCode ^
+      score.hashCode;
 
-            /// Fichier isolé (exposé à Dart).
-class FichierQuarantaine  {
-                final PlatformInt64 id;
-final String nom;
-final String origine;
-final String date;
-final String raison;
-final int score;
-
-                const FichierQuarantaine({required this.id ,required this.nom ,required this.origine ,required this.date ,required this.raison ,required this.score ,});
-
-
-
-
-
-        @override
-        int get hashCode => id.hashCode^nom.hashCode^origine.hashCode^date.hashCode^raison.hashCode^score.hashCode;
-
-
-
-        @override
-        bool operator ==(Object other) =>
-            identical(this, other) ||
-            other is FichierQuarantaine &&
-                runtimeType == other.runtimeType
-                && id == other.id&& nom == other.nom&& origine == other.origine&& date == other.date&& raison == other.raison&& score == other.score;
-
-            }
-            
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FichierQuarantaine &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          nom == other.nom &&
+          origine == other.origine &&
+          date == other.date &&
+          raison == other.raison &&
+          score == other.score;
+}

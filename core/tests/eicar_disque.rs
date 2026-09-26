@@ -24,6 +24,10 @@ fn eicar_fichier_detecte_et_mis_en_quarantaine() {
     let base = dir.path().join("eicar");
     std::fs::create_dir_all(&base).expect("mkdir");
     api::initialiser(base.to_string_lossy().into_owned()).expect("init");
+    // Suivi D26 : le mode Prudent n'isole JAMAIS (consentement absolu).
+    // Ce test prouve la voie opt-in : on active explicitement Automatique
+    // (EICAR = hash confirmé, confiance 100 ≥ 95), puis on restaure Prudent.
+    api::definir_mode(cleanx_core::mode::ModeDecision::Automatique).expect("mode auto");
 
     // Dépôt du fichier EICAR sur disque réel.
     let eicar = base.join("eicar.com");
@@ -59,6 +63,7 @@ fn eicar_fichier_detecte_et_mis_en_quarantaine() {
     );
 
     api::liberer_ressources().expect("liberer");
+    api::definir_mode(cleanx_core::mode::ModeDecision::Prudent).expect("mode reset");
     // Budget généreux anti-flake CI ; la mesure imprimée fait foi (< 2 s visés).
     assert!(
         duree < std::time::Duration::from_secs(10),

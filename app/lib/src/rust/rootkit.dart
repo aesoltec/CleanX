@@ -6,41 +6,47 @@
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+/// Un processus avec ses signaux de dissimulation.
+class ProcessusAnalyse {
+  /// PID.
+  final int pid;
 
-            
+  /// Nom tel que rapporté (peut être vide = suspect).
+  final String nom;
 
-            
+  /// Exécutable résolu, `None` si inaccessible (suspect hors processus système).
+  final String? exe;
 
-            /// Un processus avec ses signaux de dissimulation.
-class ProcessusAnalyse  {
-                /// PID.
-final int pid;
-/// Nom tel que rapporté (peut être vide = suspect).
-final String nom;
-/// Exécutable résolu, `None` si inaccessible (suspect hors processus système).
-final String? exe;
-/// Mémoire résidente (octets).
-final BigInt memoire;
-/// Raisons de suspicion (vide = rien à signaler).
-final List<String> signaux;
+  /// Mémoire résidente (octets).
+  final BigInt memoire;
 
-                const ProcessusAnalyse({required this.pid ,required this.nom ,this.exe ,required this.memoire ,required this.signaux ,});
+  /// Raisons de suspicion (vide = rien à signaler).
+  final List<String> signaux;
 
+  const ProcessusAnalyse({
+    required this.pid,
+    required this.nom,
+    this.exe,
+    required this.memoire,
+    required this.signaux,
+  });
 
+  @override
+  int get hashCode =>
+      pid.hashCode ^
+      nom.hashCode ^
+      exe.hashCode ^
+      memoire.hashCode ^
+      signaux.hashCode;
 
-
-
-        @override
-        int get hashCode => pid.hashCode^nom.hashCode^exe.hashCode^memoire.hashCode^signaux.hashCode;
-
-
-
-        @override
-        bool operator ==(Object other) =>
-            identical(this, other) ||
-            other is ProcessusAnalyse &&
-                runtimeType == other.runtimeType
-                && pid == other.pid&& nom == other.nom&& exe == other.exe&& memoire == other.memoire&& signaux == other.signaux;
-
-            }
-            
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProcessusAnalyse &&
+          runtimeType == other.runtimeType &&
+          pid == other.pid &&
+          nom == other.nom &&
+          exe == other.exe &&
+          memoire == other.memoire &&
+          signaux == other.signaux;
+}

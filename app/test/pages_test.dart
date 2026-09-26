@@ -156,14 +156,47 @@ void main() {
     await t.pumpAndSettle();
     expect(find.widgetWithText(AppBar, 'Paramètres'), findsOneWidget);
     // Mise à jour signatures (dialogue URL/clé → OK).
+    // La tuile est sous la ligne de flottaison (ListView paresseuse) :
+    // on fait défiler jusqu'à elle.
+    await t.scrollUntilVisible(
+      find.byTooltip('Mettre à jour les signatures'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await t.pumpAndSettle();
     await t.tap(find.byTooltip('Mettre à jour les signatures'));
     await t.pumpAndSettle();
     expect(find.text('URL du dépôt'), findsOneWidget);
     await t.tap(find.text('OK'));
     await t.pumpAndSettle();
     expect(find.textContaining('Signatures : +0'), findsOneWidget);
+    // Mode décision (P14) : options rendues, Prudent par défaut
+    // (état prouvé au niveau provider ; ici : rendu + interaction sans crash).
+    await t.scrollUntilVisible(
+      find.text('Mode de décision'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await t.pumpAndSettle();
+    expect(find.text('Mode de décision'), findsOneWidget);
+    expect(find.text('Prudent (recommandé)'), findsOneWidget);
+    expect(find.text('Automatique'), findsOneWidget);
+    await t.scrollUntilVisible(
+      find.text('Automatique'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await t.pumpAndSettle();
+    await t.tap(find.text('Automatique'));
+    await t.pumpAndSettle();
     // Mode jeu : interrupteur.
     expect(find.text('Mode jeu'), findsOneWidget);
+    await t.scrollUntilVisible(
+      find.byType(Switch).last,
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await t.pumpAndSettle();
     await t.tap(find.byType(Switch).last);
     await t.pumpAndSettle();
   });

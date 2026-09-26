@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -971652086;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 96079003;
 
 // Section: executor
 
@@ -259,6 +259,36 @@ fn wire__crate__api__calculer_sha256_impl(
             deserializer.end();
             transform_result_sse::<_, crate::error::CleanXError>((move || {
                 let output_ok = crate::api::calculer_sha256(api_chemin)?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__definir_mode_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "definir_mode",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_mode = <crate::mode::ModeDecision>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, crate::error::CleanXError>((move || {
+                let output_ok = crate::api::definir_mode(api_mode)?;
                 std::result::Result::Ok(output_ok)
             })())
         },
@@ -654,6 +684,35 @@ fn wire__crate__api__mettre_en_quarantaine_impl(
             deserializer.end();
             transform_result_sse::<_, crate::error::CleanXError>((move || {
                 let output_ok = crate::api::mettre_en_quarantaine(api_chemin, api_raison)?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__mode_actuel_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "mode_actuel",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            transform_result_sse::<_, crate::error::CleanXError>((move || {
+                let output_ok = crate::api::mode_actuel()?;
                 std::result::Result::Ok(output_ok)
             })())
         },
@@ -1232,11 +1291,19 @@ impl SseDecode for crate::api::EvenementMoteur {
                 let mut var_menace = <String>::sse_decode(deserializer);
                 let mut var_action = <String>::sse_decode(deserializer);
                 let mut var_sha256 = <Option<String>>::sse_decode(deserializer);
+                let mut var_score = <u8>::sse_decode(deserializer);
+                let mut var_signaux = <Vec<String>>::sse_decode(deserializer);
+                let mut var_critique = <bool>::sse_decode(deserializer);
+                let mut var_confiance = <u8>::sse_decode(deserializer);
                 return crate::api::EvenementMoteur::Menace {
                     fichier: var_fichier,
                     menace: var_menace,
                     action: var_action,
                     sha256: var_sha256,
+                    score: var_score,
+                    signaux: var_signaux,
+                    critique: var_critique,
+                    confiance: var_confiance,
                 };
             }
             3 => {
@@ -1370,6 +1437,20 @@ impl SseDecode for Vec<crate::rootkit::ProcessusAnalyse> {
     }
 }
 
+impl SseDecode for crate::mode::ModeDecision {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::mode::ModeDecision::Prudent,
+            1 => crate::mode::ModeDecision::Automatique,
+            2 => crate::mode::ModeDecision::Agressif,
+            3 => crate::mode::ModeDecision::Silencieux,
+            _ => unreachable!("Invalid variant for ModeDecision: {}", inner),
+        };
+    }
+}
+
 impl SseDecode for Option<String> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1486,10 +1567,10 @@ fn pde_ffi_dispatcher_primary_impl(
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
         1 => wire__crate__api__activer_protection_impl(port, ptr, rust_vec_len, data_len),
-        19 => wire__crate__api__mettre_a_jour_signatures_impl(port, ptr, rust_vec_len, data_len),
-        25 => wire__crate__api__scan_complet_impl(port, ptr, rust_vec_len, data_len),
-        26 => wire__crate__api__scan_personnalise_impl(port, ptr, rust_vec_len, data_len),
-        27 => wire__crate__api__scan_rapide_impl(port, ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__mettre_a_jour_signatures_impl(port, ptr, rust_vec_len, data_len),
+        27 => wire__crate__api__scan_complet_impl(port, ptr, rust_vec_len, data_len),
+        28 => wire__crate__api__scan_personnalise_impl(port, ptr, rust_vec_len, data_len),
+        29 => wire__crate__api__scan_rapide_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1508,28 +1589,30 @@ fn pde_ffi_dispatcher_sync_impl(
         5 => wire__crate__api__analyser_processus_api_impl(ptr, rust_vec_len, data_len),
         6 => wire__crate__api__arreter_scan_impl(ptr, rust_vec_len, data_len),
         7 => wire__crate__api__calculer_sha256_impl(ptr, rust_vec_len, data_len),
-        8 => wire__crate__api__deriver_cle_api_impl(ptr, rust_vec_len, data_len),
-        9 => wire__crate__api__desactiver_protection_impl(ptr, rust_vec_len, data_len),
-        10 => wire__crate__api__dossiers_surveilles_impl(ptr, rust_vec_len, data_len),
-        11 => wire__crate__api__exporter_logs_csv_impl(ptr, rust_vec_len, data_len),
-        12 => wire__crate__api__initialiser_impl(ptr, rust_vec_len, data_len),
-        13 => wire__crate__api__integrite_binaire_impl(ptr, rust_vec_len, data_len),
-        14 => wire__crate__api__liberer_ressources_impl(ptr, rust_vec_len, data_len),
-        15 => wire__crate__api__limites_rootkit_api_impl(ptr, rust_vec_len, data_len),
-        16 => wire__crate__api__lister_logs_impl(ptr, rust_vec_len, data_len),
-        17 => wire__crate__api__lister_planifications_impl(ptr, rust_vec_len, data_len),
-        18 => wire__crate__api__lister_quarantaine_impl(ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__mettre_en_quarantaine_impl(ptr, rust_vec_len, data_len),
-        21 => wire__crate__api__mode_jeu_impl(ptr, rust_vec_len, data_len),
-        22 => wire__crate__api__mode_jeu_actif_impl(ptr, rust_vec_len, data_len),
-        23 => wire__crate__api__restaurer_quarantaine_impl(ptr, rust_vec_len, data_len),
-        24 => wire__crate__api__retirer_dossier_impl(ptr, rust_vec_len, data_len),
-        28 => wire__crate__api__statut_impl(ptr, rust_vec_len, data_len),
-        29 => wire__crate__api__supprimer_planification_impl(ptr, rust_vec_len, data_len),
-        30 => wire__crate__api__supprimer_quarantaine_impl(ptr, rust_vec_len, data_len),
-        31 => wire__crate__api__suspendre_scan_impl(ptr, rust_vec_len, data_len),
-        32 => wire__crate__api__verifier_integrite_api_impl(ptr, rust_vec_len, data_len),
-        33 => wire__crate__api__verifier_paquet_api_impl(ptr, rust_vec_len, data_len),
+        8 => wire__crate__api__definir_mode_impl(ptr, rust_vec_len, data_len),
+        9 => wire__crate__api__deriver_cle_api_impl(ptr, rust_vec_len, data_len),
+        10 => wire__crate__api__desactiver_protection_impl(ptr, rust_vec_len, data_len),
+        11 => wire__crate__api__dossiers_surveilles_impl(ptr, rust_vec_len, data_len),
+        12 => wire__crate__api__exporter_logs_csv_impl(ptr, rust_vec_len, data_len),
+        13 => wire__crate__api__initialiser_impl(ptr, rust_vec_len, data_len),
+        14 => wire__crate__api__integrite_binaire_impl(ptr, rust_vec_len, data_len),
+        15 => wire__crate__api__liberer_ressources_impl(ptr, rust_vec_len, data_len),
+        16 => wire__crate__api__limites_rootkit_api_impl(ptr, rust_vec_len, data_len),
+        17 => wire__crate__api__lister_logs_impl(ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__lister_planifications_impl(ptr, rust_vec_len, data_len),
+        19 => wire__crate__api__lister_quarantaine_impl(ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__mettre_en_quarantaine_impl(ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__mode_actuel_impl(ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__mode_jeu_impl(ptr, rust_vec_len, data_len),
+        24 => wire__crate__api__mode_jeu_actif_impl(ptr, rust_vec_len, data_len),
+        25 => wire__crate__api__restaurer_quarantaine_impl(ptr, rust_vec_len, data_len),
+        26 => wire__crate__api__retirer_dossier_impl(ptr, rust_vec_len, data_len),
+        30 => wire__crate__api__statut_impl(ptr, rust_vec_len, data_len),
+        31 => wire__crate__api__supprimer_planification_impl(ptr, rust_vec_len, data_len),
+        32 => wire__crate__api__supprimer_quarantaine_impl(ptr, rust_vec_len, data_len),
+        33 => wire__crate__api__suspendre_scan_impl(ptr, rust_vec_len, data_len),
+        34 => wire__crate__api__verifier_integrite_api_impl(ptr, rust_vec_len, data_len),
+        35 => wire__crate__api__verifier_paquet_api_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1653,12 +1736,20 @@ impl flutter_rust_bridge::IntoDart for crate::api::EvenementMoteur {
                 menace,
                 action,
                 sha256,
+                score,
+                signaux,
+                critique,
+                confiance,
             } => [
                 2.into_dart(),
                 fichier.into_into_dart().into_dart(),
                 menace.into_into_dart().into_dart(),
                 action.into_into_dart().into_dart(),
                 sha256.into_into_dart().into_dart(),
+                score.into_into_dart().into_dart(),
+                signaux.into_into_dart().into_dart(),
+                critique.into_into_dart().into_dart(),
+                confiance.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::api::EvenementMoteur::ScanTermine {
@@ -1713,6 +1804,24 @@ impl flutter_rust_bridge::IntoIntoDart<crate::quarantine::FichierQuarantaine>
     for crate::quarantine::FichierQuarantaine
 {
     fn into_into_dart(self) -> crate::quarantine::FichierQuarantaine {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::mode::ModeDecision {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Prudent => 0.into_dart(),
+            Self::Automatique => 1.into_dart(),
+            Self::Agressif => 2.into_dart(),
+            Self::Silencieux => 3.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::mode::ModeDecision {}
+impl flutter_rust_bridge::IntoIntoDart<crate::mode::ModeDecision> for crate::mode::ModeDecision {
+    fn into_into_dart(self) -> crate::mode::ModeDecision {
         self
     }
 }
@@ -1942,12 +2051,20 @@ impl SseEncode for crate::api::EvenementMoteur {
                 menace,
                 action,
                 sha256,
+                score,
+                signaux,
+                critique,
+                confiance,
             } => {
                 <i32>::sse_encode(2, serializer);
                 <String>::sse_encode(fichier, serializer);
                 <String>::sse_encode(menace, serializer);
                 <String>::sse_encode(action, serializer);
                 <Option<String>>::sse_encode(sha256, serializer);
+                <u8>::sse_encode(score, serializer);
+                <Vec<String>>::sse_encode(signaux, serializer);
+                <bool>::sse_encode(critique, serializer);
+                <u8>::sse_encode(confiance, serializer);
             }
             crate::api::EvenementMoteur::ScanTermine {
                 scan_id,
@@ -2055,6 +2172,24 @@ impl SseEncode for Vec<crate::rootkit::ProcessusAnalyse> {
         for item in self {
             <crate::rootkit::ProcessusAnalyse>::sse_encode(item, serializer);
         }
+    }
+}
+
+impl SseEncode for crate::mode::ModeDecision {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::mode::ModeDecision::Prudent => 0,
+                crate::mode::ModeDecision::Automatique => 1,
+                crate::mode::ModeDecision::Agressif => 2,
+                crate::mode::ModeDecision::Silencieux => 3,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
     }
 }
 

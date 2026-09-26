@@ -6,35 +6,31 @@
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+/// Entrée de journal (exposée à Dart).
+class EntreeLog {
+  final PlatformInt64 id;
+  final String date;
+  final String niveau;
+  final String message;
 
-            
+  const EntreeLog({
+    required this.id,
+    required this.date,
+    required this.niveau,
+    required this.message,
+  });
 
-            
+  @override
+  int get hashCode =>
+      id.hashCode ^ date.hashCode ^ niveau.hashCode ^ message.hashCode;
 
-            /// Entrée de journal (exposée à Dart).
-class EntreeLog  {
-                final PlatformInt64 id;
-final String date;
-final String niveau;
-final String message;
-
-                const EntreeLog({required this.id ,required this.date ,required this.niveau ,required this.message ,});
-
-
-
-
-
-        @override
-        int get hashCode => id.hashCode^date.hashCode^niveau.hashCode^message.hashCode;
-
-
-
-        @override
-        bool operator ==(Object other) =>
-            identical(this, other) ||
-            other is EntreeLog &&
-                runtimeType == other.runtimeType
-                && id == other.id&& date == other.date&& niveau == other.niveau&& message == other.message;
-
-            }
-            
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EntreeLog &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          date == other.date &&
+          niveau == other.niveau &&
+          message == other.message;
+}

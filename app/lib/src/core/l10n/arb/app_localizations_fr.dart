@@ -153,6 +153,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get modeJeuDesc => 'Scans suspendus, détection sans quarantaine auto';
 
   @override
+  String get modeDecision => 'Mode de décision';
+
+  @override
+  String get modePrudent => 'Prudent (recommandé)';
+
+  @override
+  String get modePrudentDesc =>
+      'Demande avant toute action. Aucune quarantaine automatique.';
+
+  @override
+  String get modeAuto => 'Automatique';
+
+  @override
+  String get modeAutoDesc =>
+      'Quarantaine auto si menace avérée. À activer explicitement.';
+
+  @override
+  String get modeAgressif => 'Agressif';
+
+  @override
+  String get modeAgressifDesc =>
+      'Quarantaine auto dès score ≥ 50. Jamais de suppression.';
+
+  @override
+  String get modeSilencieux => 'Silencieux';
+
+  @override
+  String get modeSilencieuxDesc => 'Journalise seulement, n\'agit pas.';
+
+  @override
   String get processusSuspects => 'Processus suspects';
 
   @override

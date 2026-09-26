@@ -49,7 +49,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 tracing-appender = "0.2"
 # Pont FFI vers Flutter (génère les bindings Dart).
-flutter_rust_bridge = "2.13.0"
+flutter_rust_bridge = "=2.13.0"
 # Identifiants de scan uniques.
 uuid = { version = "1", features = ["v4"] }
 # Vérification Ed25519 des mises à jour de signatures.

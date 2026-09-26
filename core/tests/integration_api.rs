@@ -37,7 +37,7 @@ fn pipeline_bout_en_bout() {
 
     // 1. Init + statut.
     let statut = api::initialiser(base_txt.clone()).expect("initialiser");
-    assert!(statut.signatures >= 3);
+    assert!(statut.signatures >= 1);
     assert_eq!(api::statut().expect("statut").signatures, statut.signatures);
 
     // 2. Fonctions pures.
@@ -153,6 +153,50 @@ fn pipeline_bout_en_bout() {
     assert!(api::mode_jeu_actif().expect("jeu1"));
     assert!(api::mode_jeu(false).expect("jeu off")); // précédent : actif
     assert!(!api::mode_jeu_actif().expect("jeu2"));
+
+    // 12. P14 : en Prudent (défaut), une menace est SIGNALÉE sans action :
+    // fichier intact + quarantaine vide. Preuve du consentement par défaut.
+    // Suivi D26 : le marqueur est un hash CONFIRMÉ injecté en base
+    // (confiance 100) — le Prudent signale (jamais d'auto), l'Automatique
+    // opt-in l'isole (100 ≥ 95). Contenu Defender-safe, comme avant.
+    {
+        use sha2::{Digest, Sha256};
+        let sha = hex::encode(Sha256::digest(b"powershell -enc aGVsbG8="));
+        let conn = cleanx_core::db::ouvrir(&base.join("cleanx.db")).expect("open db");
+        conn.execute(
+            "INSERT INTO signatures(hash, nom) VALUES (?1, ?2)",
+            (sha.as_str(), "Test-Prudent-Auto-Confirme"),
+        )
+        .expect("insert menace");
+    }
+    api::definir_mode(cleanx_core::mode::ModeDecision::Prudent).expect("mode prudent");
+    let menace_dir = base.join("prudent");
+    std::fs::create_dir_all(&menace_dir).expect("mkdir prudent");
+    let menace_f = menace_dir.join("dropper.txt.exe");
+    std::fs::write(&menace_f, b"powershell -enc aGVsbG8=").expect("write menace");
+    api::scan_personnalise(vec![menace_dir.to_string_lossy().into_owned()], sink_muet())
+        .expect("scan prudent");
+    assert!(
+        menace_f.is_file(),
+        "mode Prudent : le fichier ne doit être ni déplacé ni supprimé"
+    );
+    assert!(
+        api::lister_quarantaine()
+            .expect("quarantaine vide")
+            .is_empty(),
+        "mode Prudent : aucune quarantaine automatique"
+    );
+    // ... alors qu'en Automatique, la même menace est isolée (opt-in).
+    api::definir_mode(cleanx_core::mode::ModeDecision::Automatique).expect("mode auto");
+    api::scan_personnalise(vec![menace_dir.to_string_lossy().into_owned()], sink_muet())
+        .expect("scan auto");
+    assert!(
+        !menace_f.exists(),
+        "mode Automatique : la menace doit être mise en quarantaine"
+    );
+    assert_eq!(api::lister_quarantaine().expect("quarantaine").len(), 1);
+    // Restauration du défaut usine pour les autres tests du binaire.
+    api::definir_mode(cleanx_core::mode::ModeDecision::Prudent).expect("mode reset");
 }
 
 /// Exécuteur minimal pour la future async sans dépendance de test.

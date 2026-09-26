@@ -16,18 +16,25 @@ use crate::CleanXError;
 /// Chaîne de test EICAR (inoffensive, standard de l'industrie antivirus).
 pub const EICAR: &[u8] = b"X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*";
 
-/// Hashs de test simulés (format SHA-256 valide, valeurs fictives).
-pub const FAUX_HASH_TEST_1: &str =
-    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
-pub const FAUX_HASH_TEST_2: &str =
-    "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08";
+// NOTE (B14) : AUCUN hash fictif seedé. Historiquement, `sha256("")` et
+// `sha256("test")` étaient présents et quarantinaient des fichiers sains
+// (fichier vide, fichier contenant "test"). Ne seeder QUE des malwares
+// confirmés. Ici : EICAR uniquement (inoffensif, standard).
 
 const SCHEMA: &str = "
 CREATE TABLE IF NOT EXISTS signatures(hash TEXT PRIMARY KEY, nom TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS quarantaine(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   nom TEXT NOT NULL, origine TEXT NOT NULL, date TEXT NOT NULL,
-  raison TEXT NOT NULL, score INTEGER NOT NULL, blob_path TEXT NOT NULL
+  raison TEXT NOT NULL, score INTEGER NOT NULL, blob_path TEXT NOT NULL,
+  taille_octets INTEGER NOT NULL DEFAULT 0,
+  hash_sha256 TEXT NOT NULL DEFAULT '',
+  regle TEXT NOT NULL DEFAULT '',
+  mode_actif TEXT NOT NULL DEFAULT 'Prudent',
+  decision TEXT NOT NULL DEFAULT 'Quarantaine',
+  statut TEXT NOT NULL DEFAULT 'actif',
+  date_restauration TEXT, date_suppression TEXT,
+  expire_le TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS logs(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,7 +66,63 @@ fn ouvrir_sans_seed(chemin: &Path) -> Result<Connection, CleanXError> {
     // Concurrence multi-connexions : attentes au lieu d'erreurs SQLITE_BUSY.
     conn.busy_timeout(std::time::Duration::from_secs(5))?;
     conn.execute_batch(SCHEMA)?;
+    migrer_quarantaine(&conn)?;
     Ok(conn)
+}
+
+/// Migration idempotente de `quarantaine` (SPEC_EXPORT/P19) : ajoute les
+/// colonnes manquantes aux bases créées avant la v2. `ALTER TABLE` échoue
+/// si la colonne existe → on vérifie via PRAGMA avant chaque ajout.
+fn migrer_quarantaine(conn: &Connection) -> Result<(), CleanXError> {
+    let mut stmt = conn.prepare("PRAGMA table_info(quarantaine)")?;
+    let existantes: Vec<String> = stmt
+        .query_map([], |r| r.get::<_, String>(1))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(CleanXError::from)?;
+    const AJOUTS: &[(&str, &str)] = &[
+        (
+            "taille_octets",
+            "ALTER TABLE quarantaine ADD COLUMN taille_octets INTEGER NOT NULL DEFAULT 0",
+        ),
+        (
+            "hash_sha256",
+            "ALTER TABLE quarantaine ADD COLUMN hash_sha256 TEXT NOT NULL DEFAULT ''",
+        ),
+        (
+            "regle",
+            "ALTER TABLE quarantaine ADD COLUMN regle TEXT NOT NULL DEFAULT ''",
+        ),
+        (
+            "mode_actif",
+            "ALTER TABLE quarantaine ADD COLUMN mode_actif TEXT NOT NULL DEFAULT 'Prudent'",
+        ),
+        (
+            "decision",
+            "ALTER TABLE quarantaine ADD COLUMN decision TEXT NOT NULL DEFAULT 'Quarantaine'",
+        ),
+        (
+            "statut",
+            "ALTER TABLE quarantaine ADD COLUMN statut TEXT NOT NULL DEFAULT 'actif'",
+        ),
+        (
+            "date_restauration",
+            "ALTER TABLE quarantaine ADD COLUMN date_restauration TEXT",
+        ),
+        (
+            "date_suppression",
+            "ALTER TABLE quarantaine ADD COLUMN date_suppression TEXT",
+        ),
+        (
+            "expire_le",
+            "ALTER TABLE quarantaine ADD COLUMN expire_le TEXT NOT NULL DEFAULT ''",
+        ),
+    ];
+    for (colonne, ddl) in AJOUTS {
+        if !existantes.iter().any(|c| c == colonne) {
+            conn.execute_batch(ddl)?;
+        }
+    }
+    Ok(())
 }
 
 /// Insère les signatures de test si la table est vide (idempotent, 1 requête).
@@ -71,21 +134,14 @@ pub fn semer_si_vide(conn: &Connection) -> Result<(), CleanXError> {
     Ok(())
 }
 
-/// Insère les signatures de test (idempotent via INSERT OR IGNORE).
+/// Insère la signature EICAR si absente (idempotent via INSERT OR IGNORE).
 fn semer_signatures(conn: &Connection) -> Result<(), CleanXError> {
     use sha2::{Digest, Sha256};
     let eicar = hex::encode(Sha256::digest(EICAR));
-    let lignes = [
+    conn.execute(
+        "INSERT OR IGNORE INTO signatures(hash, nom) VALUES (?1, ?2)",
         (eicar.as_str(), "EICAR-Test-File (test inoffensif)"),
-        (FAUX_HASH_TEST_1, "Test.Empty-File-Suspect"),
-        (FAUX_HASH_TEST_2, "Test.Hash-Demo"),
-    ];
-    for (hash, nom) in lignes {
-        conn.execute(
-            "INSERT OR IGNORE INTO signatures(hash, nom) VALUES (?1, ?2)",
-            (hash, nom),
-        )?;
-    }
+    )?;
     Ok(())
 }
 
@@ -170,11 +226,15 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let base = dir.path().join("test.db");
         let conn = ouvrir(&base).unwrap();
-        assert!(compter_signatures(&conn).unwrap() >= 3);
+        // Base minimale : EICAR uniquement (B14 : aucun hash fictif).
+        assert_eq!(compter_signatures(&conn).unwrap(), 1);
         use sha2::{Digest, Sha256};
         let eicar = hex::encode(Sha256::digest(EICAR));
         let nom = chercher_menace(&conn, &eicar).unwrap();
         assert!(nom.unwrap().contains("EICAR"));
         assert!(chercher_menace(&conn, &"0".repeat(64)).unwrap().is_none());
+        // B14 : ni fichier vide ni "test" ne matchent plus.
+        let vide = hex::encode(Sha256::digest(b""));
+        assert!(chercher_menace(&conn, &vide).unwrap().is_none());
     }
 }

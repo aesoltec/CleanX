@@ -222,3 +222,36 @@
   regex → `filter_map` fail-open documenté).
 - **Re-mesure** : **108 311 fichiers/min** (×12, 5,4× la cible). Clippy/tests verts.
 - **Décision** : GO (voir DECISIONS.md D09).
+
+## Phase 4 — P14 Mode Prudent par défaut (2026-09-26)
+- **Fait** : `core/src/mode.rs` + gating `analyser_fichier` + FFI `definir_mode`/`mode_actuel` + événements enrichis + UI Paramètres (RadioGroup, Prudent défaut) + i18n FR/EN + tests (unit 3/3, intégration étape 12, providers, widget).
+- **Preuves** : 46/46 Rust, 22/22 Dart, clippy/fmt/analyze 0, cov 86,50 %. Commit `9134091` (branche).
+- **Décision** : GO (P14 ✅, suite P15 dialogue consentement).
+
+## 2026-09-26 — STOP B14 : anti-faux-positifs (CORRIGÉ, réserve D26)
+- Cause : hash exact seul + seeds `sha256("")`/`sha256("test")` (B14).
+- Correctif : `SourceMenace`+`confiance` (100/70/30-50), `est_chemin_protege`
+  (système + Program Files + dev + `CLEANX_PROTECTED_EXTRA`), gating 4 règles,
+  `core/src/generiques.rs` (ClamAV-.ndb simplifié), base seed EICAR seul,
+  FFI `Menace.confiance` + regen bindings (codegen 2.13.0, triple épinglage OK).
+- Fichiers : `core/src/{generiques.rs,mode.rs,signatures.rs,api.rs,db.rs,lib.rs}`,
+  `core/tests/{faux_positifs.rs (nouveau),integration_api.rs,watcher_latence.rs}`,
+  `app/lib/src/{rust,régénéré,core/engine/moteur*.dart}`, ADR-013, D25/D26.
+- Preuves : `cargo test --lib` 47/47 ; `cargo test` intégration 5/5
+  (fuzz 100k 351 s) ; `cargo clippy --all-targets -- -D warnings` exit 0 ;
+  `cargo fmt --check` exit 0 ; `flutter analyze` No issues ; `flutter test` 22/22.
+- Reprise mission : P25-P27 ensuite (SPEC_EXPORT légitime, confirmé).
+
+## 2026-09-26 — Suivi B14/D26 : 2 correctifs (vert, réserve Authenticode maintenue)
+- (1) Mitigation : `seuil_confiance_auto` (Prudent None / Auto 95 / Agressif 80),
+  `doit_isoler_auto(mode, source, score, chemin)` (lieux évalués en un point),
+  `est_zone_utilisateur`, messages de refus expliqués (seuil/zone/jeu/protégé).
+  EICAR-disque et étapes P14 passent en opt-in explicite (hash confirmé injecté).
+- (2) EXTRA : `lister_extras[_avec_refus]` + `extra_valide` (DEV_MODE + debug-only
+  + refus larges/utilisateur/traversée), `annoncer_extras` (journal/scan+protection).
+- Tests : `mode.rs` (gating, zones, littéraux D:\Temp/Public//tmp, extras),
+  `faux_positifs.rs` 2/2 (stand-ins + Documents + contre-preuves Auto).
+- Preuves : lib 50/50 ; intégration 6/6 (fuzz 344 s) ; clippy `-D warnings` 0 ;
+  fmt 0. Pas de changement FFI → pas de regen (bindings intacts).
+- Docs : ADR-013 (limites .ndb exactes — `*` supporté, pas de plages/EP/regex),
+  BUGS addendum, JOURNAL. Fichiers : `core/src/{mode,api}.rs`, 3 tests, docs.

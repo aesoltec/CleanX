@@ -7,6 +7,7 @@ import 'error.dart';
 import 'frb_generated.dart';
 import 'heuristics.dart';
 import 'logging.dart';
+import 'mode.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 import 'quarantine.dart';
@@ -14,34 +15,38 @@ import 'rootkit.dart';
 import 'scheduler.dart';
 part 'api.freezed.dart';
 
-            // These functions are ignored because they are not marked as `pub`: `analyser_fichier`, `avec_detail`, `charger_dossiers`, `demarrer_scan`, `dossier_personnel`, `etat`, `executer_scan`, `lister_fichiers_sync`, `racines_completes`, `racines_rapides`, `runtime`, `sauver_dossiers`
+// These functions are ignored because they are not marked as `pub`: `analyser_fichier`, `avec_detail`, `charger_dossiers`, `demarrer_scan`, `dossier_personnel`, `etat`, `executer_scan`, `lire_echantillon_async`, `lire_mode`, `lister_fichiers_sync`, `racines_completes`, `racines_rapides`, `runtime`, `sauver_dossiers`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `EtatMoteur`, `VerdictFichier`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`
 
-
-            /// Initialise le moteur : dossiers, base SQLite + seed, clé, logs, dossiers suivis.
+/// Initialise le moteur : dossiers, base SQLite + seed, clé, logs, dossiers suivis.
 ///
 /// À appeler une fois au démarrage de l'app (chemin base fourni par Dart via
 /// path_provider). Idempotent : ré-appelable sans effet destructeur.
-StatutGlobal  initialiser({required String base }) => CleanxCore.instance.api.crateApiInitialiser(base: base);
+StatutGlobal initialiser({required String base}) =>
+    CleanxCore.instance.api.crateApiInitialiser(base: base);
 
 /// État global instantané (dashboard).
-StatutGlobal  statut() => CleanxCore.instance.api.crateApiStatut();
+StatutGlobal statut() => CleanxCore.instance.api.crateApiStatut();
 
 /// Scan rapide : Téléchargements + Bureau.
-Stream<EvenementMoteur>  scanRapide() => CleanxCore.instance.api.crateApiScanRapide();
+Stream<EvenementMoteur> scanRapide() =>
+    CleanxCore.instance.api.crateApiScanRapide();
 
 /// Scan complet : dossier personnel.
-Stream<EvenementMoteur>  scanComplet() => CleanxCore.instance.api.crateApiScanComplet();
+Stream<EvenementMoteur> scanComplet() =>
+    CleanxCore.instance.api.crateApiScanComplet();
 
 /// Scan personnalisé sur `racines` (chemins existants, sinon erreur claire).
-Stream<EvenementMoteur>  scanPersonnalise({required List<String> racines }) => CleanxCore.instance.api.crateApiScanPersonnalise(racines: racines);
+Stream<EvenementMoteur> scanPersonnalise({required List<String> racines}) =>
+    CleanxCore.instance.api.crateApiScanPersonnalise(racines: racines);
 
 /// Demande l'arrêt du scan en cours. `true` si un scan tournait.
-bool  arreterScan() => CleanxCore.instance.api.crateApiArreterScan();
+bool arreterScan() => CleanxCore.instance.api.crateApiArreterScan();
 
 /// Suspend (`true`) ou reprend (`false`) le scan en cours.
-void  suspendreScan({required bool suspendre }) => CleanxCore.instance.api.crateApiSuspendreScan(suspendre: suspendre);
+void suspendreScan({required bool suspendre}) =>
+    CleanxCore.instance.api.crateApiSuspendreScan(suspendre: suspendre);
 
 /// Mode jeu : scans suspendus + temps réel en surveillance seule.
 ///
@@ -50,140 +55,223 @@ void  suspendreScan({required bool suspendre }) => CleanxCore.instance.api.crate
 /// en quarantaine automatiquement (aucune E/S disque intempestive pendant
 /// une partie). Retourne l'état précédent. V1 manuelle (bascule UI) ;
 /// détection automatique de plein écran ticketée (spécifique par OS).
-bool  modeJeu({required bool actif }) => CleanxCore.instance.api.crateApiModeJeu(actif: actif);
+bool modeJeu({required bool actif}) =>
+    CleanxCore.instance.api.crateApiModeJeu(actif: actif);
 
 /// État du mode jeu.
-bool  modeJeuActif() => CleanxCore.instance.api.crateApiModeJeuActif();
+bool modeJeuActif() => CleanxCore.instance.api.crateApiModeJeuActif();
+
+/// Définit le mode de décision (Prudent par défaut, opt-in explicites).
+/// Retourne le mode précédent.
+ModeDecision definirMode({required ModeDecision mode}) =>
+    CleanxCore.instance.api.crateApiDefinirMode(mode: mode);
+
+/// Mode de décision courant (Prudent si jamais configuré).
+ModeDecision modeActuel() => CleanxCore.instance.api.crateApiModeActuel();
 
 /// Active la surveillance : bloque jusqu'à `desactiver_protection`.
 ///
 /// Chaque nouveau fichier est analysé (1 s de grâce pour fin d'écriture) puis
 /// mis en quarantaine auto si menace. Les alertes partent dans `sink`.
-Stream<EvenementMoteur>  activerProtection() => CleanxCore.instance.api.crateApiActiverProtection();
+Stream<EvenementMoteur> activerProtection() =>
+    CleanxCore.instance.api.crateApiActiverProtection();
 
 /// Désactive la protection. `true` si elle était active.
-bool  desactiverProtection() => CleanxCore.instance.api.crateApiDesactiverProtection();
+bool desactiverProtection() =>
+    CleanxCore.instance.api.crateApiDesactiverProtection();
 
 /// Dossiers surveillés.
-List<String>  dossiersSurveilles() => CleanxCore.instance.api.crateApiDossiersSurveilles();
+List<String> dossiersSurveilles() =>
+    CleanxCore.instance.api.crateApiDossiersSurveilles();
 
 /// Ajoute un dossier (doit exister, sinon `CheminInvalide`).
-List<String>  ajouterDossier({required String dossier }) => CleanxCore.instance.api.crateApiAjouterDossier(dossier: dossier);
+List<String> ajouterDossier({required String dossier}) =>
+    CleanxCore.instance.api.crateApiAjouterDossier(dossier: dossier);
 
 /// Retire un dossier de la surveillance.
-List<String>  retirerDossier({required String dossier }) => CleanxCore.instance.api.crateApiRetirerDossier(dossier: dossier);
+List<String> retirerDossier({required String dossier}) =>
+    CleanxCore.instance.api.crateApiRetirerDossier(dossier: dossier);
 
 /// Met en quarantaine (score heuristique calculé automatiquement).
-PlatformInt64  mettreEnQuarantaine({required String chemin , required String raison }) => CleanxCore.instance.api.crateApiMettreEnQuarantaine(chemin: chemin, raison: raison);
+PlatformInt64 mettreEnQuarantaine(
+        {required String chemin, required String raison}) =>
+    CleanxCore.instance.api
+        .crateApiMettreEnQuarantaine(chemin: chemin, raison: raison);
 
 /// Liste la quarantaine.
-List<FichierQuarantaine>  listerQuarantaine() => CleanxCore.instance.api.crateApiListerQuarantaine();
+List<FichierQuarantaine> listerQuarantaine() =>
+    CleanxCore.instance.api.crateApiListerQuarantaine();
 
 /// Restaure un fichier isolé (faux positif).
-void  restaurerQuarantaine({required PlatformInt64 id , required String destination }) => CleanxCore.instance.api.crateApiRestaurerQuarantaine(id: id, destination: destination);
+void restaurerQuarantaine(
+        {required PlatformInt64 id, required String destination}) =>
+    CleanxCore.instance.api
+        .crateApiRestaurerQuarantaine(id: id, destination: destination);
 
 /// Supprime définitivement une entrée.
-void  supprimerQuarantaine({required PlatformInt64 id }) => CleanxCore.instance.api.crateApiSupprimerQuarantaine(id: id);
+void supprimerQuarantaine({required PlatformInt64 id}) =>
+    CleanxCore.instance.api.crateApiSupprimerQuarantaine(id: id);
 
 /// Inventaire des processus + signaux de dissimulation (base anti-rootkit
 /// userland v1 — voir `rootkit.rs` pour les limites assumées).
-List<ProcessusAnalyse>  analyserProcessusApi() => CleanxCore.instance.api.crateApiAnalyserProcessusApi();
+List<ProcessusAnalyse> analyserProcessusApi() =>
+    CleanxCore.instance.api.crateApiAnalyserProcessusApi();
 
 /// Limites documentées de la détection (affichables dans l'UI).
-List<String>  limitesRootkitApi() => CleanxCore.instance.api.crateApiLimitesRootkitApi();
+List<String> limitesRootkitApi() =>
+    CleanxCore.instance.api.crateApiLimitesRootkitApi();
 
 /// Libère les ressources natives : vide le pool SQLite (ferme les fichiers).
 ///
 /// À appeler avant suppression du dossier de base ou à l'arrêt de l'app.
 /// Sans appel, les fichiers `.db` restent verrouillés le temps du processus
 /// (comportement pool standard, documenté ici et dans `db::vider_pool`).
-void  libererRessources() => CleanxCore.instance.api.crateApiLibererRessources();
+void libererRessources() => CleanxCore.instance.api.crateApiLibererRessources();
 
 /// Derniers événements (UI filtrable).
-List<EntreeLog>  listerLogs({required int limite }) => CleanxCore.instance.api.crateApiListerLogs(limite: limite);
+List<EntreeLog> listerLogs({required int limite}) =>
+    CleanxCore.instance.api.crateApiListerLogs(limite: limite);
 
 /// Exporte les logs au format CSV (contenu texte, l'UI choisit la destination).
-String  exporterLogsCsv() => CleanxCore.instance.api.crateApiExporterLogsCsv();
+String exporterLogsCsv() => CleanxCore.instance.api.crateApiExporterLogsCsv();
 
 /// Crée une planification (retourne son id).
-PlatformInt64  ajouterPlanification({required String nom , required List<String> racines , required BigInt intervalleSecs }) => CleanxCore.instance.api.crateApiAjouterPlanification(nom: nom, racines: racines, intervalleSecs: intervalleSecs);
+PlatformInt64 ajouterPlanification(
+        {required String nom,
+        required List<String> racines,
+        required BigInt intervalleSecs}) =>
+    CleanxCore.instance.api.crateApiAjouterPlanification(
+        nom: nom, racines: racines, intervalleSecs: intervalleSecs);
 
 /// Liste les planifications.
-List<Planification>  listerPlanifications() => CleanxCore.instance.api.crateApiListerPlanifications();
+List<Planification> listerPlanifications() =>
+    CleanxCore.instance.api.crateApiListerPlanifications();
 
 /// Supprime une planification.
-void  supprimerPlanification({required PlatformInt64 id }) => CleanxCore.instance.api.crateApiSupprimerPlanification(id: id);
+void supprimerPlanification({required PlatformInt64 id}) =>
+    CleanxCore.instance.api.crateApiSupprimerPlanification(id: id);
 
 /// SHA-256 d'un fichier (pur, sans initialisation requise).
-String  calculerSha256({required String chemin }) => CleanxCore.instance.api.crateApiCalculerSha256(chemin: chemin);
+String calculerSha256({required String chemin}) =>
+    CleanxCore.instance.api.crateApiCalculerSha256(chemin: chemin);
 
 /// Analyse heuristique d'un fichier (pur, sans initialisation requise).
-AnalyseHeuristique  analyserHeuristiqueApi({required String chemin }) => CleanxCore.instance.api.crateApiAnalyserHeuristiqueApi(chemin: chemin);
+AnalyseHeuristique analyserHeuristiqueApi({required String chemin}) =>
+    CleanxCore.instance.api.crateApiAnalyserHeuristiqueApi(chemin: chemin);
 
 /// Empreinte SHA-256 du binaire (auto-protection).
-String  integriteBinaire() => CleanxCore.instance.api.crateApiIntegriteBinaire();
+String integriteBinaire() => CleanxCore.instance.api.crateApiIntegriteBinaire();
 
 /// Vérifie l'intégrité contre une empreinte de référence (`None` = pas de référence).
-bool  verifierIntegriteApi({String? attendu }) => CleanxCore.instance.api.crateApiVerifierIntegriteApi(attendu: attendu);
+bool verifierIntegriteApi({String? attendu}) =>
+    CleanxCore.instance.api.crateApiVerifierIntegriteApi(attendu: attendu);
 
 /// Dérive une clé hex via Argon2 (testable sans initialisation).
-String  deriverCleApi({required String phrase , required String selB64 }) => CleanxCore.instance.api.crateApiDeriverCleApi(phrase: phrase, selB64: selB64);
+String deriverCleApi({required String phrase, required String selB64}) =>
+    CleanxCore.instance.api
+        .crateApiDeriverCleApi(phrase: phrase, selB64: selB64);
 
 /// Vérifie un paquet de signatures Ed25519 (pur).
-bool  verifierPaquetApi({required List<int> paquet , required String signatureHex , required String clePubliqueHex }) => CleanxCore.instance.api.crateApiVerifierPaquetApi(paquet: paquet, signatureHex: signatureHex, clePubliqueHex: clePubliqueHex);
+bool verifierPaquetApi(
+        {required List<int> paquet,
+        required String signatureHex,
+        required String clePubliqueHex}) =>
+    CleanxCore.instance.api.crateApiVerifierPaquetApi(
+        paquet: paquet,
+        signatureHex: signatureHex,
+        clePubliqueHex: clePubliqueHex);
 
 /// Met à jour les signatures depuis un dépôt HTTPS signé Ed25519.
 ///
 /// Import transactionnel : tout ou rien (rollback si signature invalide ou
 /// entrée malformée). Retourne le nombre de signatures AJOUTÉES.
-Future<int>  mettreAJourSignatures({required String urlDepot , required String clePubliqueHex }) => CleanxCore.instance.api.crateApiMettreAJourSignatures(urlDepot: urlDepot, clePubliqueHex: clePubliqueHex);
+Future<int> mettreAJourSignatures(
+        {required String urlDepot, required String clePubliqueHex}) =>
+    CleanxCore.instance.api.crateApiMettreAJourSignatures(
+        urlDepot: urlDepot, clePubliqueHex: clePubliqueHex);
 
-            @freezed
-                sealed class EvenementMoteur with _$EvenementMoteur  {
-                    const EvenementMoteur._();
+@freezed
+sealed class EvenementMoteur with _$EvenementMoteur {
+  const EvenementMoteur._();
 
-                     /// Ligne de journal (info).
-const factory EvenementMoteur.journal({   required String message , }) = EvenementMoteur_Journal;
- /// Avancement d'un scan.
-const factory EvenementMoteur.progression({   required String scanId ,  required String fichier ,  required BigInt traites ,  required BigInt total , }) = EvenementMoteur_Progression;
- /// Menace détectée (avec action effectuée + empreinte pour audit).
-const factory EvenementMoteur.menace({   required String fichier ,  required String menace ,  required String action ,  String? sha256 , }) = EvenementMoteur_Menace;
- /// Fin de scan (naturelle ou annulée).
-const factory EvenementMoteur.scanTermine({   required String scanId ,  required BigInt total ,  required BigInt menaces ,  required bool annule , }) = EvenementMoteur_ScanTermine;
- /// Changement d'état de la protection temps réel.
-const factory EvenementMoteur.protection({   required bool active , }) = EvenementMoteur_Protection;
+  /// Ligne de journal (info).
+  const factory EvenementMoteur.journal({
+    required String message,
+  }) = EvenementMoteur_Journal;
 
-                    
+  /// Avancement d'un scan.
+  const factory EvenementMoteur.progression({
+    required String scanId,
+    required String fichier,
+    required BigInt traites,
+    required BigInt total,
+  }) = EvenementMoteur_Progression;
 
-                    
-                }
+  /// Menace détectée (avec action effectuée + empreinte pour audit).
+  /// `score`/`signaux`/`critique` alimentent le dialogue de consentement (P15/P16/P18).
+  const factory EvenementMoteur.menace({
+    required String fichier,
+    required String menace,
+    required String action,
+    String? sha256,
+    required int score,
+    required List<String> signaux,
+    required bool critique,
+
+    /// Confiance 0–100 (100 = hash confirmé, 70 = générique, 30–50 = heuristique).
+    required int confiance,
+  }) = EvenementMoteur_Menace;
+
+  /// Fin de scan (naturelle ou annulée).
+  const factory EvenementMoteur.scanTermine({
+    required String scanId,
+    required BigInt total,
+    required BigInt menaces,
+    required bool annule,
+  }) = EvenementMoteur_ScanTermine;
+
+  /// Changement d'état de la protection temps réel.
+  const factory EvenementMoteur.protection({
+    required bool active,
+  }) = EvenementMoteur_Protection;
+}
 
 /// État global pour le dashboard.
-class StatutGlobal  {
-                final bool protection;
-final int signatures;
-final BigInt menaces;
-final BigInt fichiersAnalyses;
-final bool scanEnCours;
-final List<String> dossiers;
+class StatutGlobal {
+  final bool protection;
+  final int signatures;
+  final BigInt menaces;
+  final BigInt fichiersAnalyses;
+  final bool scanEnCours;
+  final List<String> dossiers;
 
-                const StatutGlobal({required this.protection ,required this.signatures ,required this.menaces ,required this.fichiersAnalyses ,required this.scanEnCours ,required this.dossiers ,});
+  const StatutGlobal({
+    required this.protection,
+    required this.signatures,
+    required this.menaces,
+    required this.fichiersAnalyses,
+    required this.scanEnCours,
+    required this.dossiers,
+  });
 
+  @override
+  int get hashCode =>
+      protection.hashCode ^
+      signatures.hashCode ^
+      menaces.hashCode ^
+      fichiersAnalyses.hashCode ^
+      scanEnCours.hashCode ^
+      dossiers.hashCode;
 
-
-
-
-        @override
-        int get hashCode => protection.hashCode^signatures.hashCode^menaces.hashCode^fichiersAnalyses.hashCode^scanEnCours.hashCode^dossiers.hashCode;
-
-
-
-        @override
-        bool operator ==(Object other) =>
-            identical(this, other) ||
-            other is StatutGlobal &&
-                runtimeType == other.runtimeType
-                && protection == other.protection&& signatures == other.signatures&& menaces == other.menaces&& fichiersAnalyses == other.fichiersAnalyses&& scanEnCours == other.scanEnCours&& dossiers == other.dossiers;
-
-            }
-            
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StatutGlobal &&
+          runtimeType == other.runtimeType &&
+          protection == other.protection &&
+          signatures == other.signatures &&
+          menaces == other.menaces &&
+          fichiersAnalyses == other.fichiersAnalyses &&
+          scanEnCours == other.scanEnCours &&
+          dossiers == other.dossiers;
+}

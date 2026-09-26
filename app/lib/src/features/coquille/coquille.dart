@@ -53,6 +53,7 @@ class _CoquilleState extends ConsumerState<Coquille> {
           await ref.read(statutProvider.notifier).charger();
           await ref.read(protectionProvider.notifier).synchroniser();
           await ref.read(modeJeuProvider.notifier).synchroniser();
+          await ref.read(modeDecisionProvider.notifier).synchroniser();
           await ref.read(dossiersProvider.notifier).charger();
           await ref.read(quarantaineProvider.notifier).charger();
           await ref.read(logsProvider.notifier).charger(moteur);

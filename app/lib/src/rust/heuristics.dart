@@ -6,46 +6,40 @@
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+/// Résultat de l'analyse heuristique (exposé à Dart).
+class AnalyseHeuristique {
+  /// Score 0–100.
+  final int score;
 
-            
+  /// Signaux détectés (libellés français).
+  final List<String> signaux;
 
-            
+  /// Classification selon les seuils.
+  final VerdictHeuristique verdict;
 
-            /// Résultat de l'analyse heuristique (exposé à Dart).
-class AnalyseHeuristique  {
-                /// Score 0–100.
-final int score;
-/// Signaux détectés (libellés français).
-final List<String> signaux;
-/// Classification selon les seuils.
-final VerdictHeuristique verdict;
+  const AnalyseHeuristique({
+    required this.score,
+    required this.signaux,
+    required this.verdict,
+  });
 
-                const AnalyseHeuristique({required this.score ,required this.signaux ,required this.verdict ,});
+  @override
+  int get hashCode => score.hashCode ^ signaux.hashCode ^ verdict.hashCode;
 
-
-
-
-
-        @override
-        int get hashCode => score.hashCode^signaux.hashCode^verdict.hashCode;
-
-
-
-        @override
-        bool operator ==(Object other) =>
-            identical(this, other) ||
-            other is AnalyseHeuristique &&
-                runtimeType == other.runtimeType
-                && score == other.score&& signaux == other.signaux&& verdict == other.verdict;
-
-            }
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AnalyseHeuristique &&
+          runtimeType == other.runtimeType &&
+          score == other.score &&
+          signaux == other.signaux &&
+          verdict == other.verdict;
+}
 
 /// Verdict heuristique (exposé à Dart comme enum).
 enum VerdictHeuristique {
-                    sain,
-suspect,
-menace,
-                    ;
-                    
-                }
-            
+  sain,
+  suspect,
+  menace,
+  ;
+}

@@ -386,6 +386,60 @@ abstract class AppLocalizations {
   /// **'Scans suspendus, détection sans quarantaine auto'**
   String get modeJeuDesc;
 
+  /// No description provided for @modeDecision.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mode de décision'**
+  String get modeDecision;
+
+  /// No description provided for @modePrudent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prudent (recommandé)'**
+  String get modePrudent;
+
+  /// No description provided for @modePrudentDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demande avant toute action. Aucune quarantaine automatique.'**
+  String get modePrudentDesc;
+
+  /// No description provided for @modeAuto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Automatique'**
+  String get modeAuto;
+
+  /// No description provided for @modeAutoDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quarantaine auto si menace avérée. À activer explicitement.'**
+  String get modeAutoDesc;
+
+  /// No description provided for @modeAgressif.
+  ///
+  /// In fr, this message translates to:
+  /// **'Agressif'**
+  String get modeAgressif;
+
+  /// No description provided for @modeAgressifDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quarantaine auto dès score ≥ 50. Jamais de suppression.'**
+  String get modeAgressifDesc;
+
+  /// No description provided for @modeSilencieux.
+  ///
+  /// In fr, this message translates to:
+  /// **'Silencieux'**
+  String get modeSilencieux;
+
+  /// No description provided for @modeSilencieuxDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Journalise seulement, n\'agit pas.'**
+  String get modeSilencieuxDesc;
+
   /// No description provided for @processusSuspects.
   ///
   /// In fr, this message translates to:

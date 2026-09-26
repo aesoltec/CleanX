@@ -13,7 +13,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{
-    atomic::{AtomicBool, AtomicU64, Ordering},
+    atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
     mpsc, Mutex, OnceLock,
 };
 use std::time::Duration;
@@ -23,7 +23,8 @@ use flutter_rust_bridge::frb;
 use tokio::runtime::Runtime;
 
 use crate::{
-    heuristics, logging, quarantine, scheduler, self_defense, signatures, watcher, CleanXError,
+    generiques, heuristics, logging, mode, quarantine, scheduler, self_defense, signatures,
+    watcher, CleanXError,
 };
 
 // ================================================================ Types exposés
@@ -52,11 +53,17 @@ pub enum EvenementMoteur {
         total: u64,
     },
     /// Menace détectée (avec action effectuée + empreinte pour audit).
+    /// `score`/`signaux`/`critique` alimentent le dialogue de consentement (P15/P16/P18).
     Menace {
         fichier: String,
         menace: String,
         action: String,
         sha256: Option<String>,
+        score: u8,
+        signaux: Vec<String>,
+        critique: bool,
+        /// Confiance 0–100 (100 = hash confirmé, 70 = générique, 30–50 = heuristique).
+        confiance: u8,
     },
     /// Fin de scan (naturelle ou annulée).
     ScanTermine {
@@ -78,6 +85,20 @@ struct VerdictFichier {
     action: Option<String>,
     sha256: Option<String>,
     score: u8,
+    signaux: Vec<String>,
+    critique: bool,
+    confiance: u8,
+}
+
+/// Lit jusqu'à 2 Mo pour la recherche de motifs (tolérant : vide si illisible).
+async fn lire_echantillon_async(chemin: &Path) -> Vec<u8> {
+    use tokio::io::AsyncReadExt;
+    let mut buf = Vec::new();
+    if let Ok(f) = tokio::fs::File::open(chemin).await {
+        let mut limite = f.take(2 * 1024 * 1024);
+        let _ = limite.read_to_end(&mut buf).await;
+    }
+    buf
 }
 
 // ================================================================ État global
@@ -99,6 +120,19 @@ static SCAN_ANNULE: AtomicBool = AtomicBool::new(false);
 static SCAN_PAUSE: AtomicBool = AtomicBool::new(false);
 /// Mode jeu : quand actif, pas de quarantaine automatique (surveillance seule).
 static MODE_JEU: AtomicBool = AtomicBool::new(false);
+/// Mode de décision : discriminant de `ModeDecision`, **0 = Prudent (défaut)**.
+/// Voir `mode.rs` + ADR-012. Jamais d'action auto sans opt-in explicite.
+static MODE_DECISION: AtomicU8 = AtomicU8::new(0);
+
+/// Lit le mode de décision courant (Prudent si valeur inconnue — repli sûr).
+fn lire_mode() -> mode::ModeDecision {
+    match MODE_DECISION.load(Ordering::Relaxed) {
+        1 => mode::ModeDecision::Automatique,
+        2 => mode::ModeDecision::Agressif,
+        3 => mode::ModeDecision::Silencieux,
+        _ => mode::ModeDecision::Prudent,
+    }
+}
 static PROTECTION_ACTIVE: AtomicBool = AtomicBool::new(false);
 static PROTECTION_STOP: AtomicBool = AtomicBool::new(false);
 static COMPTEUR_MENACES: AtomicU64 = AtomicU64::new(0);
@@ -245,16 +279,19 @@ pub fn statut() -> Result<StatutGlobal, CleanXError> {
 
 // ================================================================ Pipeline d'analyse
 
-/// Analyse complète d'un fichier : signatures → heuristique → quarantaine auto.
+/// Analyse complète d'un fichier : signatures → heuristique → décision.
+/// Le `mode` décide de l'action (P14/ADR-012) : en Prudent (défaut) et en
+/// Silencieux, AUCUNE quarantaine automatique — l'événement suffit.
 async fn analyser_fichier(
     db: &Path,
     quarantaine_dir: &Path,
     cle: &[u8; 32],
     chemin: &Path,
-    auto_quarantaine: bool,
+    mode: mode::ModeDecision,
 ) -> VerdictFichier {
     COMPTEUR_FICHIERS.fetch_add(1, Ordering::Relaxed);
     let chemin_txt = chemin.to_string_lossy().into_owned();
+    let critique = mode::est_chemin_critique(&chemin_txt);
 
     let sig = match signatures::verifier_signature(db, chemin).await {
         Ok(v) => v,
@@ -266,6 +303,9 @@ async fn analyser_fichier(
                 action: None,
                 sha256: None,
                 score: 0,
+                signaux: Vec::new(),
+                critique,
+                confiance: 0,
             }
             .avec_detail(e.to_string())
         }
@@ -278,6 +318,9 @@ async fn analyser_fichier(
             action: None,
             sha256: sig.sha256,
             score: 0,
+            signaux: Vec::new(),
+            critique,
+            confiance: 0,
         }
         .avec_detail(err);
     }
@@ -293,9 +336,25 @@ async fn analyser_fichier(
         verdict: heuristics::VerdictHeuristique::Sain,
     });
 
-    let mut menace = sig.menace.clone();
+    let mut menace: Option<String> = sig.menace.clone();
+    // Sources candidates (B14) : hash confirmé (100) > motif générique (70) >
+    // heuristique seule (30–50). On retient la PLUS confiante : un malware
+    // connu au comportement suspect s'affiche « Signature », pas « Heuristique ».
+    let mut source = sig
+        .menace
+        .as_ref()
+        .map(|_| signatures::SourceMenace::SignatureConnue);
+    // Motifs génériques (familles, pas juste exacts) : lus une seule fois.
+    let echantillon = lire_echantillon_async(chemin).await;
+    let generique = generiques::analyser_bytes(&echantillon);
+    if source.is_none() {
+        if let Some(ref g) = generique {
+            menace = Some(format!("Générique[{}]", g.nom));
+            source = Some(signatures::SourceMenace::Generique);
+        }
+    }
     if heur.verdict == heuristics::VerdictHeuristique::Menace {
-        menace = Some(format!(
+        let heuristique = Some(format!(
             "Heuristique[{}] : {}",
             heur.score,
             heur.signaux
@@ -305,11 +364,31 @@ async fn analyser_fichier(
                 .collect::<Vec<_>>()
                 .join("; ")
         ));
+        let conf_heur = signatures::confiance(signatures::SourceMenace::Heuristique, heur.score);
+        let conf_actuelle = source
+            .map(|s| signatures::confiance(s, heur.score))
+            .unwrap_or(0);
+        if source.is_none() || conf_heur > conf_actuelle {
+            menace = heuristique;
+            source = Some(signatures::SourceMenace::Heuristique);
+        }
     }
+    let confiance = source
+        .map(|s| signatures::confiance(s, heur.score))
+        .unwrap_or(0);
+    // Chemin protégé (système, confiance, dev) : jamais d'action auto.
+    // Zone utilisateur : jamais d'auto en Agressif (suivi D26).
+    let protege = mode::est_chemin_protege(&chemin_txt);
+    let zone_utilisateur = mode::est_zone_utilisateur(&chemin_txt);
 
     if let Some(m) = menace {
         COMPTEUR_MENACES.fetch_add(1, Ordering::Relaxed);
-        let action = if auto_quarantaine {
+        // Décision d'isolement : mode utilisateur ET surcouche mode jeu
+        // (zéro E/S disque pendant une partie). Les règles de lieu sont
+        // évaluées dans `doit_isoler_auto` (B14 + suivi D26).
+        let mode_jeu = MODE_JEU.load(Ordering::Relaxed);
+        let isoler = !mode_jeu && mode::doit_isoler_auto(mode, source, heur.score, &chemin_txt);
+        let action = if isoler {
             let (db2, dir2, cle2, ch2, m2) = (
                 db.to_path_buf(),
                 quarantaine_dir.to_path_buf(),
@@ -326,8 +405,28 @@ async fn analyser_fichier(
                 Ok(Err(e)) => format!("QUARANTAINE ÉCHOUÉE : {e}"),
                 Err(e) => format!("worker quarantaine : {e}"),
             }
+        } else if protege {
+            // Chemin système/confiance/dev : détection affichée, action
+            // humaine obligatoire (double confirmation en UI, P18).
+            "protégé — confirmation requise (chemin système/confiance)".to_string()
+        } else if mode_jeu {
+            "signalé (quarantaine auto désactivée — mode jeu)".to_string()
         } else {
-            "signalé (quarantaine auto désactivée)".to_string()
+            match mode {
+                // Défaut usine (P14) : on informe, on attend la décision.
+                mode::ModeDecision::Prudent => "signalé — en attente de décision".to_string(),
+                mode::ModeDecision::Silencieux => "journalisé (mode silencieux)".to_string(),
+                // Mitigation D26 : le refus est EXPLIQUÉ (seuil ou zone).
+                mode::ModeDecision::Automatique => {
+                    format!("signalé — confiance {confiance} < 95 (action auto refusée)")
+                }
+                mode::ModeDecision::Agressif if zone_utilisateur => {
+                    "signalé — zone utilisateur (action auto refusée)".to_string()
+                }
+                mode::ModeDecision::Agressif => {
+                    format!("signalé — confiance {confiance} < 80 (action auto refusée)")
+                }
+            }
         };
         VerdictFichier {
             fichier: chemin_txt,
@@ -336,6 +435,9 @@ async fn analyser_fichier(
             action: Some(action),
             sha256: sig.sha256,
             score: heur.score,
+            signaux: heur.signaux.clone(),
+            critique,
+            confiance,
         }
     } else if heur.verdict == heuristics::VerdictHeuristique::Suspect {
         VerdictFichier {
@@ -345,6 +447,9 @@ async fn analyser_fichier(
             action: Some("surveillé".into()),
             sha256: sig.sha256,
             score: heur.score,
+            signaux: heur.signaux.clone(),
+            critique,
+            confiance: 0,
         }
     } else {
         VerdictFichier {
@@ -354,6 +459,9 @@ async fn analyser_fichier(
             action: None,
             sha256: sig.sha256,
             score: heur.score,
+            signaux: Vec::new(),
+            critique,
+            confiance: 0,
         }
     }
 }
@@ -433,9 +541,9 @@ async fn executer_scan(racines: Vec<PathBuf>, scan_id: String, sink: &StreamSink
         while SCAN_PAUSE.load(Ordering::Relaxed) && !SCAN_ANNULE.load(Ordering::Relaxed) {
             tokio::time::sleep(Duration::from_millis(200)).await;
         }
-        // Mode jeu : détection sans quarantaine auto (zéro E/S disque).
-        let auto = !MODE_JEU.load(Ordering::Relaxed);
-        let v = analyser_fichier(&e.db, &e.quarantaine_dir, &e.cle, chemin, auto).await;
+        // Le mode de décision est lu à chaque fichier (bascule dynamique) ;
+        // `analyser_fichier` applique aussi la surcouche mode jeu.
+        let v = analyser_fichier(&e.db, &e.quarantaine_dir, &e.cle, chemin, lire_mode()).await;
         match v.statut {
             "menace" => {
                 menaces += 1;
@@ -444,6 +552,10 @@ async fn executer_scan(racines: Vec<PathBuf>, scan_id: String, sink: &StreamSink
                     menace: v.menace.clone().unwrap_or_default(),
                     action: v.action.clone().unwrap_or_default(),
                     sha256: v.sha256.clone(),
+                    score: v.score,
+                    signaux: v.signaux.clone(),
+                    critique: v.critique,
+                    confiance: v.confiance,
                 });
                 let _ = logging::journaliser(
                     &e.db,
@@ -486,13 +598,40 @@ async fn executer_scan(racines: Vec<PathBuf>, scan_id: String, sink: &StreamSink
     );
 }
 
+/// Journalise la surcouche `CLEANX_PROTECTED_EXTRA` (audit Correctif 2 §4) :
+/// racines acceptées ET refusées, une fois par scan/protection. Silence
+/// total si rien n'est configuré (cas nominal de production).
+fn annoncer_extras(db: &Path) {
+    let (acceptes, refuses) = mode::lister_extras_avec_refus();
+    if acceptes.is_empty() && refuses.is_empty() {
+        return;
+    }
+    let resume = |liste: &[String]| {
+        let mut l = liste.to_vec();
+        l.sort();
+        l.truncate(10);
+        l.join(", ")
+    };
+    let _ = logging::journaliser(
+        db,
+        "info",
+        &format!(
+            "extras protégés : {} accepté(s) [{}], {} refusé(s) [{}]",
+            acceptes.len(),
+            resume(&acceptes),
+            refuses.len(),
+            resume(&refuses)
+        ),
+    );
+}
 /// Démarre un scan (un seul à la fois). Le `sink` reçoit progression + rapport.
 fn demarrer_scan(
     racines: Vec<PathBuf>,
     prefixe: &str,
     sink: StreamSink<EvenementMoteur>,
 ) -> Result<(), CleanXError> {
-    etat()?; // moteur initialisé ?
+    let e = etat()?; // moteur initialisé ?
+    annoncer_extras(&e.db); // audit Correctif 2 §4 (acceptés + refusés)
     if SCAN_EN_COURS.swap(true, Ordering::SeqCst) {
         return Err(CleanXError::ScanDejaEnCours);
     }
@@ -570,6 +709,29 @@ pub fn mode_jeu_actif() -> Result<bool, CleanXError> {
     Ok(MODE_JEU.load(Ordering::Relaxed))
 }
 
+// ================================================================ Modes de décision (P14/ADR-012)
+
+/// Définit le mode de décision (Prudent par défaut, opt-in explicites).
+/// Retourne le mode précédent.
+#[frb(sync)]
+pub fn definir_mode(mode: mode::ModeDecision) -> Result<mode::ModeDecision, CleanXError> {
+    let precedent = lire_mode();
+    let discriminant = match mode {
+        mode::ModeDecision::Prudent => 0,
+        mode::ModeDecision::Automatique => 1,
+        mode::ModeDecision::Agressif => 2,
+        mode::ModeDecision::Silencieux => 3,
+    };
+    MODE_DECISION.store(discriminant, Ordering::SeqCst);
+    Ok(precedent)
+}
+
+/// Mode de décision courant (Prudent si jamais configuré).
+#[frb(sync)]
+pub fn mode_actuel() -> Result<mode::ModeDecision, CleanXError> {
+    Ok(lire_mode())
+}
+
 // ================================================================ Protection temps réel
 
 /// Active la surveillance : bloque jusqu'à `desactiver_protection`.
@@ -582,6 +744,7 @@ pub fn activer_protection(sink: StreamSink<EvenementMoteur>) -> Result<(), Clean
         return Ok(()); // déjà active : idempotent
     }
     PROTECTION_STOP.store(false, Ordering::Relaxed);
+    annoncer_extras(&e.db); // audit Correctif 2 §4 (acceptés + refusés)
     let _ = sink.add(EvenementMoteur::Protection { active: true });
     let _ = logging::journaliser(&e.db, "info", "Protection temps réel ACTIVÉE");
 
@@ -621,13 +784,12 @@ pub fn activer_protection(sink: StreamSink<EvenementMoteur>) -> Result<(), Clean
                 });
                 // Mode jeu : détection sans quarantaine auto (lu à chaque
                 // fichier : bascule dynamique pendant la surveillance).
-                let auto = !MODE_JEU.load(Ordering::Relaxed);
                 let v = runtime()?.block_on(analyser_fichier(
                     &e.db,
                     &e.quarantaine_dir,
                     &e.cle,
                     &chemin,
-                    auto,
+                    lire_mode(),
                 ));
                 if v.statut == "menace" {
                     let _ = sink.add(EvenementMoteur::Menace {
@@ -635,6 +797,10 @@ pub fn activer_protection(sink: StreamSink<EvenementMoteur>) -> Result<(), Clean
                         menace: v.menace.clone().unwrap_or_default(),
                         action: v.action.clone().unwrap_or_default(),
                         sha256: v.sha256.clone(),
+                        score: v.score,
+                        signaux: v.signaux.clone(),
+                        critique: v.critique,
+                        confiance: v.confiance,
                     });
                     let _ = logging::journaliser(
                         &e.db,

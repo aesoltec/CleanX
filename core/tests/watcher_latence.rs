@@ -16,12 +16,30 @@ type SinkTest = StreamSink<cleanx_core::api::EvenementMoteur, SseCodec>;
 /// Score attendu : .exe (20) + powershell -enc (30) + CreateRemoteThread (30) = 80.
 const CONTENU_MENACE: &[u8] = b"outil.exe test\npowershell -enc aGVsbG8=\nCreateRemoteThread demo";
 
+/// Confirme le contenu déclencheur comme malware avéré (hash en base) :
+/// depuis le suivi D26, l'Automatique n'isole qu'à confiance ≥ 95
+/// (un motif générique à 70 ne suffit plus — voir `faux_positifs.rs`).
+fn confirmer_menace(base: &std::path::Path) {
+    use sha2::{Digest, Sha256};
+    let sha = hex::encode(Sha256::digest(CONTENU_MENACE));
+    let conn = cleanx_core::db::ouvrir(&base.join("cleanx.db")).expect("open db");
+    conn.execute(
+        "INSERT INTO signatures(hash, nom) VALUES (?1, ?2)",
+        (sha.as_str(), "Test-Watcher-Confirme"),
+    )
+    .expect("insert menace");
+}
+
 #[test]
 fn latence_detection_menace_moins_1s() {
     let dir = tempfile::tempdir().expect("tempdir");
     let base = dir.path().join("latence");
     std::fs::create_dir_all(&base).expect("mkdir");
     api::initialiser(base.to_string_lossy().into_owned()).expect("init");
+    confirmer_menace(&base);
+    // Contrat historique : quarantaine auto = opt-in explicite (P14).
+    // Ce test mesure la voie automatique : on l'active puis on restaure Prudent.
+    api::definir_mode(cleanx_core::mode::ModeDecision::Automatique).expect("mode auto");
 
     let rt = base.join("rt");
     std::fs::create_dir_all(&rt).expect("mkdir rt");
@@ -54,4 +72,5 @@ fn latence_detection_menace_moins_1s() {
     assert!(latence < Duration::from_secs(1), "trop lent : {latence:?}");
 
     api::liberer_ressources().expect("liberer");
+    api::definir_mode(cleanx_core::mode::ModeDecision::Prudent).expect("mode reset");
 }

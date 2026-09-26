@@ -14,6 +14,7 @@ import '../../rust/api.dart' as noyau;
 import '../../rust/frb_generated.dart';
 import '../../rust/heuristics.dart' as noyau_h;
 import '../../rust/logging.dart' as noyau_l;
+import '../../rust/mode.dart' as noyau_m;
 import '../../rust/quarantine.dart' as noyau_q;
 import '../../rust/rootkit.dart' as noyau_r;
 import '../../rust/scheduler.dart' as noyau_s;
@@ -83,6 +84,10 @@ class MoteurFrb implements MoteurCleanX {
           menace: e.menace,
           action: e.action,
           sha256: e.sha256,
+          score: e.score,
+          signaux: e.signaux,
+          critique: e.critique,
+          confiance: e.confiance,
         );
       } else if (e is noyau.EvenementMoteur_ScanTermine) {
         return ScanTermineMoteur(
@@ -271,6 +276,44 @@ class MoteurFrb implements MoteurCleanX {
   Future<bool> modeJeuActif() async {
     await _ffi();
     return noyau.modeJeuActif();
+  }
+
+  @override
+  Future<ModeDecision> definirMode(ModeDecision mode) async {
+    await _ffi();
+    return _mode(noyau.definirMode(mode: _modeNatif(mode)));
+  }
+
+  @override
+  Future<ModeDecision> modeActuel() async {
+    await _ffi();
+    return _mode(noyau.modeActuel());
+  }
+
+  noyau_m.ModeDecision _modeNatif(ModeDecision mode) {
+    switch (mode) {
+      case ModeDecision.prudent:
+        return noyau_m.ModeDecision.prudent;
+      case ModeDecision.automatique:
+        return noyau_m.ModeDecision.automatique;
+      case ModeDecision.agressif:
+        return noyau_m.ModeDecision.agressif;
+      case ModeDecision.silencieux:
+        return noyau_m.ModeDecision.silencieux;
+    }
+  }
+
+  ModeDecision _mode(noyau_m.ModeDecision mode) {
+    switch (mode) {
+      case noyau_m.ModeDecision.prudent:
+        return ModeDecision.prudent;
+      case noyau_m.ModeDecision.automatique:
+        return ModeDecision.automatique;
+      case noyau_m.ModeDecision.agressif:
+        return ModeDecision.agressif;
+      case noyau_m.ModeDecision.silencieux:
+        return ModeDecision.silencieux;
+    }
   }
 
   @override

@@ -135,6 +135,9 @@ class SettingsPage extends ConsumerWidget {
           ),
           _ListePlanifications(),
           const Divider(),
+          // Mode de décision (P14) : Prudent coché par défaut, opt-in explicites.
+          _TuileModeDecision(),
+          const Divider(),
           // Mode jeu (v1 manuelle : détection auto de plein écran ticketée).
           _TuileModeJeu(),
           const Divider(),
@@ -217,6 +220,59 @@ class SettingsPage extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Sélecteur du mode de décision (P14) : radios avec descriptions,
+/// Prudent coché par défaut. Pas de SegmentedButton : 4 options + textes.
+class _TuileModeDecision extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loc = AppLocalizations.of(context);
+    final mode = ref.watch(modeDecisionProvider);
+    Widget option(ModeDecision valeur, String titre, String description) {
+      return RadioListTile<ModeDecision>(
+        value: valeur,
+        title: Text(titre),
+        subtitle:
+            Text(description, style: const TextStyle(fontSize: 12)),
+        dense: true,
+      );
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.policy),
+              title: Text(loc.modeDecision,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            RadioGroup<ModeDecision>(
+              groupValue: mode,
+              onChanged: (v) {
+                if (v != null) {
+                  ref.read(modeDecisionProvider.notifier).definir(v);
+                }
+              },
+              child: Column(
+                children: [
+                  option(ModeDecision.prudent, loc.modePrudent, loc.modePrudentDesc),
+                  option(ModeDecision.automatique, loc.modeAuto, loc.modeAutoDesc),
+                  option(
+                      ModeDecision.agressif, loc.modeAgressif, loc.modeAgressifDesc),
+                  option(ModeDecision.silencieux, loc.modeSilencieux,
+                      loc.modeSilencieuxDesc),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

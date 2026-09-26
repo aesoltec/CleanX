@@ -6,40 +6,46 @@
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+/// Une planification de scan (exposée à Dart).
+class Planification {
+  final PlatformInt64 id;
 
-            
+  /// Nom affiché ("Analyse hebdo").
+  final String nom;
 
-            
+  /// Dossiers/racines à scanner.
+  final List<String> racines;
 
-            /// Une planification de scan (exposée à Dart).
-class Planification  {
-                final PlatformInt64 id;
-/// Nom affiché ("Analyse hebdo").
-final String nom;
-/// Dossiers/racines à scanner.
-final List<String> racines;
-/// Périodicité en secondes (ex. 604800 = hebdomadaire).
-final BigInt intervalleSecs;
-/// Prochaine exécution (epoch, secondes).
-final BigInt prochaineExec;
+  /// Périodicité en secondes (ex. 604800 = hebdomadaire).
+  final BigInt intervalleSecs;
 
-                const Planification({required this.id ,required this.nom ,required this.racines ,required this.intervalleSecs ,required this.prochaineExec ,});
+  /// Prochaine exécution (epoch, secondes).
+  final BigInt prochaineExec;
 
+  const Planification({
+    required this.id,
+    required this.nom,
+    required this.racines,
+    required this.intervalleSecs,
+    required this.prochaineExec,
+  });
 
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      nom.hashCode ^
+      racines.hashCode ^
+      intervalleSecs.hashCode ^
+      prochaineExec.hashCode;
 
-
-
-        @override
-        int get hashCode => id.hashCode^nom.hashCode^racines.hashCode^intervalleSecs.hashCode^prochaineExec.hashCode;
-
-
-
-        @override
-        bool operator ==(Object other) =>
-            identical(this, other) ||
-            other is Planification &&
-                runtimeType == other.runtimeType
-                && id == other.id&& nom == other.nom&& racines == other.racines&& intervalleSecs == other.intervalleSecs&& prochaineExec == other.prochaineExec;
-
-            }
-            
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Planification &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          nom == other.nom &&
+          racines == other.racines &&
+          intervalleSecs == other.intervalleSecs &&
+          prochaineExec == other.prochaineExec;
+}

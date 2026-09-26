@@ -22,8 +22,10 @@ pub mod error;
 /// module fournit un `StreamSink` factice pour `cargo test`. Le codegen
 /// remplacera ce fichier par les vrais bindings (conservez `pub mod`).
 pub mod frb_generated;
+pub mod generiques;
 pub mod heuristics;
 pub mod logging;
+pub mod mode;
 pub mod quarantine;
 pub mod rootkit;
 pub mod scheduler;

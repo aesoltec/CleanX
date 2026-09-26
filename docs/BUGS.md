@@ -119,3 +119,31 @@
 - **Non-régression** : job `lint-workflows` vérifie `git status --porcelain`
   vide sur les dossiers sources (aucun fichier fantôme possible) ; audit
   `git status --ignored` des dossiers sources : propre.
+
+## B14 — Faux positifs : hash SHA-256 seuls + seeds de test dangereux [EN COURS — Phase 4]
+- **Sévérité** : critique (un AV qui isole des fichiers sains perd toute confiance).
+- **Symptôme** : détection par empreinte exacte uniquement ; de plus la base
+  seedée contenait `sha256("")` (TOUT fichier vide) et `sha256("test") (fichier
+  contenant "test") → quarantaine de fichiers propres en modes automatiques.
+- **Exigences (STOP mission)** : signatures génériques ClamAV-.ndb, whitelist
+  chemins système/dev, jamais d'auto-action sur chemin protégé, score de
+  confiance (100/70/30-50), révision base (EICAR seul), tests System32/
+  Program Files/node_modules à 0 quarantaine, règle AGENTS §4bis.
+- **Correctif** : modèle `SourceMenace`+`confiance`, `est_chemin_protege`,
+  Prudent auto si confiance ≥ 95 uniquement, `CLEANX_PROTECTED_EXTRA` (dev/CI).
+- **Statut** : CORRIGÉ 2026-09-26.
+  **Suivi D26 (2026-09-26, 2 correctifs)** : (1) mitigation en attendant
+  Authenticode — Prudent = jamais d'auto, Automatique = confiance ≥ 95,
+  Agressif = ≥ 80 ET hors zone utilisateur (`est_zone_utilisateur`) ;
+  (2) `CLEANX_PROTECTED_EXTRA` sécurisé — ignoré sans `CLEANX_DEV_MODE=1`,
+  jamais lu en release, entrées validées (refus racines larges / zones
+  utilisateur / `..`), ajouts journalisés (`annoncer_extras`).
+  Preuves : lib 50/50, intégration 6/6, clippy/fmt 0. Preuves : lib 47/47, intégration 5/5
+  (dont `faux_positifs.rs`), clippy `-D warnings` 0, fmt 0,
+  `flutter analyze` 0, Dart 22/22. Réserve : vérification Authenticode
+  native reportée (D26, règle chemin-protégé plus stricte en attendant).
+- **Non-régression** : `pas_de_quarantaine_system32_prudent`,
+  `whitelist_dev_dirs_zero_quarantaine`, `faux_hash_supprimes`,
+  `generic_eicar_detecte`, `confiance_calibree`,
+  `chemins_proteges_jamais_auto`, tests existants adaptés (watcher,
+  intégration étape 12 via marqueur générique).

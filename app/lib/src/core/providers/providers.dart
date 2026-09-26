@@ -380,6 +380,35 @@ final modeJeuProvider = StateNotifierProvider<ModeJeuNotifier, bool>(
   (ref) => ModeJeuNotifier(ref.watch(moteurProvider)),
 );
 
+/// Mode de décision (P14) : **Prudent par défaut**, opt-in explicites.
+/// Synchronisé avec le moteur à chaque bascule et au démarrage.
+class ModeDecisionNotifier extends StateNotifier<ModeDecision> {
+  final MoteurCleanX _moteur;
+  ModeDecisionNotifier(this._moteur) : super(ModeDecision.prudent);
+
+  Future<void> synchroniser() async {
+    try {
+      state = await _moteur.modeActuel();
+    } catch (_) {
+      state = ModeDecision.prudent;
+    }
+  }
+
+  Future<void> definir(ModeDecision mode) async {
+    try {
+      await _moteur.definirMode(mode);
+      state = mode;
+    } catch (_) {
+      // Moteur indisponible : état local conservé tel quel.
+    }
+  }
+}
+
+final modeDecisionProvider =
+    StateNotifierProvider<ModeDecisionNotifier, ModeDecision>(
+  (ref) => ModeDecisionNotifier(ref.watch(moteurProvider)),
+);
+
 /// Processus suspects (base anti-rootkit) : rafraîchi à la demande.
 final processusSuspectsProvider =
     FutureProvider<List<ProcessusDto>>((ref) async {
