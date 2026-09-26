@@ -3,7 +3,7 @@
 > **Dernière mise à jour :** 2026-09-26 — Cycle 2 (gouvernance P14-P24 + correctifs AGENTS)
 > **Agent :** openCode
 > **Branche active :** `mission/p14-prudent-par-defaut` (AGENTS.md §1.3 : pas de commit direct sur `main`)
-> **Progression globale :** 5 / 24 points ✅ — **21%** (+1 ⚠️ atténué)
+> **Progression globale :** 6 / 24 points ✅ — **25%** (+1 ⚠️ atténué)
 
 ---
 
@@ -11,12 +11,12 @@
 
 | Catégorie | Total | ✅ | ⚠️ | 🔄/⏳ | ⬜/❌ |
 |---|---|---|---|---|---|
-| P0 — Vision produit & éthique (P14-P24) | 11 | 0 | 0 | 0 | 11 |
+| P0 — Vision produit & éthique (P14-P24) | 11 | 1 | 0 | 0 | 10 |
 | P0 — Bloquant technique (Points 1-4) | 4 | 1 | 0 | 3 | 0 |
 | P1 — Important (Points 5-7) | 3 | 2 | 1 | 0 | 0 |
 | P2 — Qualité (Points 8-10) | 3 | 2 | 0 | 1 | 0 |
 | P3 — Finition (Points 11-13) | 3 | 0 | 0 | 2 | 1 |
-| **TOTAL** | **24** | **5** | **1** | **6** | **12** |
+| **TOTAL** | **24** | **6** | **1** | **6** | **11** |
 
 **Verdict provisoire :** ⏳ EN COURS — priorité P0 éthique (P14→P24) par ordre impératif.
 
@@ -28,7 +28,7 @@
 
 | # | Point | Statut | Preuve |
 |---|---|---|---|
-| 14 | Mode "Prudent" par défaut | ⬜ | — |
+| 14 | Mode "Prudent" par défaut | ✅ | voir Point 14 ci-dessous |
 | 15 | Consentement utilisateur explicite | ⬜ | — |
 | 16 | Explicabilité des détections | ⬜ | — |
 | 17 | Traçabilité complète des actions | ⬜ | — |
@@ -40,7 +40,31 @@
 | 23 | Conformité RGPD / vie privée | ⬜ | — |
 | 24 | Signaler faux positif en 1 clic | ⬜ | — |
 
-**Progression P0 éthique :** 0 / 11 — **0%**
+**Progression P0 éthique :** 1 / 11 — **9%**
+
+---
+
+## ✅ Point 14 — Mode "Prudent" par défaut (détail preuve)
+- **Statut :** ✅ TERMINÉ (2026-09-26, branche `mission/p14-prudent-par-defaut`, commit `9134091`)
+- **Code :**
+  - `core/src/mode.rs` (nouveau) : `enum ModeDecision { Prudent (défaut), Automatique, Agressif, Silencieux }` + `doit_isoler_auto` + `est_chemin_critique`
+  - `core/src/api.rs` : global `MODE_DECISION` (défaut 0 = Prudent), `lire_mode()`, FFI `definir_mode`/`mode_actuel`, gating dans `analyser_fichier` + événements `Menace{score, signaux, critique}`
+  - `app/lib/.../settings_page.dart` : `_TuileModeDecision` (RadioGroup, Prudent coché par défaut) ; provider `modeDecisionProvider` (défaut Prudent) ; sync au démarrage (`coquille.dart`)
+  - i18n : 10 clés FR/EN (`modeDecision`, `modePrudent(+Desc)`, `modeAuto(+Desc)`, `modeAgressif(+Desc)`, `modeSilencieux(+Desc)`)
+  - Bindings régénérés dans le même commit (AGENTS.md §1.4)
+- **Tests :**
+  - `cargo test mode::` : 3/3 (`default_mode_is_prudent`, `gating_par_mode`, `chemins_critiques`)
+  - `cargo test --test integration_api` : OK (dont étape 12 : Prudent = fichier intact + quarantaine vide ; Automatique = isolé)
+  - `flutter test test/providers_test.dart` : `mode décision : Prudent par défaut...` OK
+  - `flutter test test/pages_test.dart` : options rendues + interaction OK
+- **Preuves commandes :**
+  - `cargo clippy --all-targets -- -D warnings` → exit 0 ; `cargo fmt --check` → exit 0
+  - `cargo test` → 46/46 verts (41 lib + 1 intégration + 2 fuzz + 1 latence + 1 eicar-skip)
+  - `cargo llvm-cov` → 86,50 % lignes (hors généré)
+  - `flutter analyze` → No issues ; `flutter test` → 22/22
+  - Couverture Rust 84,87 % → **86,50 %** (pas de régression)
+- **Checklist produit (4ter) applicable** : défaut Prudent ✅, opt-in explicite ✅ (sélecteur), pas d'action auto par défaut ✅.
+- **Reste (P15)** : dialogue de consentement exploitant ces événements.
 
 ---
 
@@ -185,6 +209,7 @@
 |---|---|---|---|---|---|
 | 1 | 2026-09-26 | — | Initialisation (fichier pré-existant) | Repris | — |
 | 2 | 2026-09-26 | — | Gouvernance P14-P24 (MISSION.md, STATUS, dist, D24) | En cours | Cette branche |
+| 3 | 2026-09-26 | — | **P14 Mode Prudent** (moteur+FFI+UI+tests) | ✅ GO | Commit `9134091` : 46/46 Rust, 22/22 Dart, clippy/fmt/analyze 0, cov 86,5 % |
 
 ---
 
@@ -211,4 +236,4 @@ La mission est terminée **uniquement** si :
 - **Chaque ✅ a une preuve** traçable
 - **`RAPPORT_FINAL_V3.md`** est rédigé avec verdict explicite
 
-**Progression actuelle :** 5 / 24 — **21%** (+1 ⚠️)
+**Progression actuelle :** 6 / 24 — **25%** (+1 ⚠️)

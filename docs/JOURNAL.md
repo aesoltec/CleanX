@@ -222,3 +222,8 @@
   regex → `filter_map` fail-open documenté).
 - **Re-mesure** : **108 311 fichiers/min** (×12, 5,4× la cible). Clippy/tests verts.
 - **Décision** : GO (voir DECISIONS.md D09).
+
+## Phase 4 — P14 Mode Prudent par défaut (2026-09-26)
+- **Fait** : `core/src/mode.rs` + gating `analyser_fichier` + FFI `definir_mode`/`mode_actuel` + événements enrichis + UI Paramètres (RadioGroup, Prudent défaut) + i18n FR/EN + tests (unit 3/3, intégration étape 12, providers, widget).
+- **Preuves** : 46/46 Rust, 22/22 Dart, clippy/fmt/analyze 0, cov 86,50 %. Commit `9134091` (branche).
+- **Décision** : GO (P14 ✅, suite P15 dialogue consentement).
